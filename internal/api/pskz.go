@@ -11,29 +11,7 @@ import (
 )
 
 var client = http.Client{
-	Timeout: time.Second * 30,
-}
-
-type GraphQLRequest struct {
-	Query     string                 `json:"query"`
-	Variables map[string]interface{} `json:"variables,omitempty"`
-}
-
-type GraphQLResponse struct {
-	Data struct {
-		Domains struct {
-			Whois struct {
-				Whois struct {
-					Available bool `json:"available"`
-					Info      struct {
-						Domain struct {
-							ExDate string `json:"exDate"`
-						} `json:"domain"`
-					} `json:"info"`
-				} `json:"whois"`
-			} `json:"whois"`
-		} `json:"domains"`
-	} `json:"data"`
+	Timeout: time.Second * 10,
 }
 
 func GetDomainInfo(domainName string) (string, bool) {
@@ -66,7 +44,7 @@ func GetDomainInfo(domainName string) (string, bool) {
 	}
 
 	diff := exDate.Sub(time.Now())
-	days := uint64(diff.Hours() / 24)
+	days := int64(diff.Hours() / 24)
 
 	var icon string
 	var result bool
@@ -107,14 +85,14 @@ func sendRequest(url string, query GraphQLRequest) (*GraphQLResponse, error) {
 
 	response, err = retry(request)
 	if err != nil {
-		log.Fatal("HTTP request error:", err)
+		log.Printf("HTTP request error: %s", err)
 		return nil, err
 	}
 	defer response.Body.Close()
 
 	if response.StatusCode != 200 {
-		log.Printf("Request error: %s", err)
-		return nil, err
+		log.Printf("Request status: %s", err)
+		return nil, fmt.Errorf("request status error: %s", response.Status)
 	}
 
 	err = json.NewDecoder(response.Body).Decode(&gqlResponse)

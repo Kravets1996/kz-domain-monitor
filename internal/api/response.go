@@ -1,20 +1,23 @@
 package api
 
-import (
-	"strconv"
-	"time"
-)
-
-type PsResponse struct {
-	Result string `json:"result"`
-	Answer struct {
-		Expire struct {
-			Unix string `json:"unix"`
-		} `json:"expire"`
-	} `json:"answer"`
+type GraphQLRequest struct {
+	Query     string                 `json:"query"`
+	Variables map[string]interface{} `json:"variables,omitempty"`
 }
 
-func (response PsResponse) GetExpireTime() time.Time {
-	sec, _ := strconv.ParseInt(response.Answer.Expire.Unix, 10, 64)
-	return time.Unix(sec, 0)
+type GraphQLResponse struct {
+	Data struct {
+		Domains struct {
+			Whois struct {
+				Whois struct {
+					Available bool `json:"available"`
+					Info      struct {
+						Domain struct {
+							ExDate string `json:"exDate"`
+						} `json:"domain"`
+					} `json:"info"`
+				} `json:"whois"`
+			} `json:"whois"`
+		} `json:"domains"`
+	} `json:"data"`
 }

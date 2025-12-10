@@ -10,32 +10,40 @@
 Основана на API [ps.kz](https://ps.kz/). 
 Для работы необходима регистрация и получение токена в личном кабинете (бесплатно).
 
+## Для кого эта утилита?
+Системных администраторов, владельцев сайтов, команд разработки, которые хотят узнавать о проблемах с оплатой домена
+заранее, а не когда домен уже отключен и сайт не работает.
+
 ## Быстрый старт (Docker)
 ```shell
-docker run --rm -e DOMAIN_LIST=example.kz -e PS_GRAPHQL_TOKEN='****' kz-domain-monitor
+docker run --rm -e DOMAIN_LIST=example.kz -e PS_GRAPHQL_TOKEN='****' kravets1996/kz-domain-monitor
 ```
+
+## Демо
+[Публичный Telegram-канал с мониторингом доменов гос. сервисов](https://t.me/kz_gov_domain_monitor)
 
 ## Установка
 
 Для начала загрузите файл .env для настройки утилиты:
 [Ссылка]()
 ```shell
-wget https://github.com/kz-domain-monitor/.env.example .env
+wget -O .env https://raw.githubusercontent.com/Kravets1996/kz-domain-monitor/refs/heads/main/.env.example
 ```
 
 ### Загрузка pre-built binary
 #### Linux
 ```shell
-wget https://github.com/kz-domain-monitor
+wget https://github.com/Kravets1996/kz-domain-monitor/releases/latest/download/kz-domain-monitor
 
 chmod +x kz-domain-monitor
 ```
 #### Windows
-[Страница Release в Github]()
+[Скачать](https://github.com/Kravets1996/kz-domain-monitor/releases/latest/download/kz-domain-monitor.exe)
+[Страница Release в Github](https://github.com/Kravets1996/kz-domain-monitor/releases)
 
 ### Docker
 ```shell
-docker run --rm -v $(pwd)/.env:/app/.env kz-domain-monitor
+docker run --rm -v $(pwd)/.env:/app/.env kravets1996/kz-domain-monitor
 ```
 
 ### Kubernetes
@@ -47,7 +55,7 @@ kubectl apply -n kz-domain-monitor -f k8s/cronjob.yml
 
 ### Source
 ```shell
-git clone https://github.com/kz-domain-monitor
+git clone https://github.com/kravets1996/kz-domain-monitor
 cd kz-domain-monitor
 go build -o kz-domain-monitor
 ```
@@ -85,7 +93,7 @@ Linux:
 
 Docker:
 ```shell
-docker run --rm -v $(pwd)/.env:/app/.env kz-domain-monitor
+docker run --rm -v $(pwd)/.env:/app/.env kravets1996/kz-domain-monitor
 ```
 
 ### Планировщик
@@ -106,7 +114,7 @@ docker run --rm -v $(pwd)/.env:/app/.env kz-domain-monitor
 ```shell
 schtasks /create ^
   /tn "KZDomainMonitor" ^
-  /tr "C:\domain-monitor\domain-monitor.exe" ^
+  /tr "C:\domain-monitor\kz-domain-monitor.exe" ^
   /sc daily ^
   /st 12:00 ^
   /f
@@ -118,6 +126,12 @@ go mod vendor
 go run main.go
 ```
 
+Сборка:
+```shell
+go build -o kz-domain-monitor
+GOOS=windows GOARCH=amd64 go build -o kz-domain-monitor.exe
+```
+
 #### Сборка Docker образа
 ```shell
 docker build -t kz-domain-monitor .
@@ -127,6 +141,10 @@ docker run --rm -v $(pwd)/.env:/app/.env kz-domain-monitor
 Полезные ссылки:
 - [Инструкция по API GraphQL](https://console.ps.kz/docs/faq/pscloud-api/ps-cloud-api/instrukciya-po-api-graphql)
 - [GraphQL Playground](https://console.ps.kz/domains/graphql)
+
+## Contribution guide
+В случае если вы нашли ошибку в коде, хотите предложить улучшение или задать вопрос - воспользуйтесь разделами
+[issue](https://github.com/Kravets1996/kz-domain-monitor/issues) и [pull request](https://github.com/Kravets1996/kz-domain-monitor/pulls).
 
 ## Лицензия
 

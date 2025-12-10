@@ -15,7 +15,7 @@ spec:
           restartPolicy: Never
           containers:
             - name: scheduler
-              image: kz-domain-monitor:latest
+              image: kravets1996/kz-domain-monitor:latest
               imagePullPolicy: IfNotPresent
               workingDir: /app
               command: ["kz-domain-monitor"]

@@ -11,7 +11,7 @@ var Configuration Config
 type Config struct {
 	PSApiToken   string
 	DomainList   []string
-	DaysToExpire uint64
+	DaysToExpire int64
 	SendSuccess  bool
 	Telegram     TelegramConfig
 }
@@ -23,7 +23,7 @@ type TelegramConfig struct {
 }
 
 func Init() {
-	daysToExpireInt, _ := strconv.ParseUint(getEnv(`DAYS_TO_EXPIRE`, "5"), 10, 64)
+	daysToExpireInt, _ := strconv.ParseInt(getEnv(`DAYS_TO_EXPIRE`, "5"), 10, 64)
 
 	Configuration = Config{
 		PSApiToken:   getEnvStrict(`PS_GRAPHQL_TOKEN`),
@@ -35,6 +35,12 @@ func Init() {
 			BotToken: os.Getenv(`TELEGRAM_BOT_TOKEN`),
 			ChatID:   os.Getenv(`TELEGRAM_CHAT_ID`),
 		},
+	}
+
+	if Configuration.Telegram.Enabled {
+		if Configuration.Telegram.BotToken == "" || Configuration.Telegram.ChatID == "" {
+			panic("Telegram config is not set")
+		}
 	}
 }
 
