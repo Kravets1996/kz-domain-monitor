@@ -1,0 +1,5 @@
+/.env
+/vendor
+
+# binary
+/kz-domain-monitor

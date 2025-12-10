@@ -1,0 +1,15 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kz-domain-monitor
+data:
+  PS_GRAPHQL_TOKEN: ''
+
+  DOMAIN_LIST: 'example.kz,egov.kz'
+
+  DAYS_TO_EXPIRE: '14'
+
+  TELEGRAM_BOT_TOKEN: ''
+  TELEGRAM_CHAT_ID: ''
+  TELEGRAM_ENABLED: 'false'

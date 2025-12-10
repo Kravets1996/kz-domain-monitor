@@ -1,0 +1,24 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: kz-domain-monitor
+spec:
+  schedule: "0 14 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: scheduler
+              image: kz-domain-monitor:latest
+              imagePullPolicy: IfNotPresent
+              workingDir: /app
+              command: ["kz-domain-monitor"]
+              envFrom:
+                - configMapRef:
+                    name: kz-domain-monitor
