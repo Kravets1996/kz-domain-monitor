@@ -75,7 +75,7 @@ go build -o kz-domain-monitor
 2. Создайте и скопируйте токен нового бота.
 3. Установите токен в переменную `TELEGRAM_BOT_TOKEN`.
 4. Напишите боту любое сообщение
-5. Перейдите по ссылке (замените <BOT_TOKEN> на токен бота, полученный на шаге 2) https://api.telegram.org/bot<BOT_TOKEN>/getUpdates
+5. Перейдите по ссылке (замените <BOT_TOKEN> на токен бота, полученный на шаге 2) `https://api.telegram.org/bot<BOT_TOKEN>/getUpdates`
 6. Найдите ID чата в полученном JSON `"chat":{"id":123456789}`
 7. Установите полученный ID в переменную `TELEGRAM_CHAT_ID`
 
