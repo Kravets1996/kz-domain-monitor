@@ -10,7 +10,9 @@ import (
 func SendNotification(results []string, hasError bool) {
 	cfg := config.GetConfig()
 
-	message := strings.Join(results, "\n")
+	message := "До истечения домена осталось: \n"
+
+	message = message + strings.Join(results, "\n")
 
 	if cfg.Telegram.Enabled {
 		err := channels.NewTelegramChannel(cfg.Telegram.BotToken, cfg.Telegram.ChatID).Send(message, !hasError)

@@ -57,7 +57,7 @@ func GetDomainInfo(domainName string) (string, bool) {
 		result = false
 	}
 
-	message := fmt.Sprintf("%s %d дней до истечения домена %s", icon, days, domainName)
+	message := fmt.Sprintf("%s %d дней - %s", icon, days, domainName)
 
 	log.Println(message)
 
