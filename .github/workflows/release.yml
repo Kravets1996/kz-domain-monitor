@@ -65,6 +65,7 @@ jobs:
           push: true
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/kz-domain-monitor:${{ steps.tag.outputs.TAG }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/kz-domain-monitor:latest
 
   release:
     name: Create GitHub release
