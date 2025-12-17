@@ -18,6 +18,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Extract tag
+        id: tag
+        run: echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
@@ -25,11 +29,11 @@ jobs:
 
       - name: Build Linux binary
         run: |
-          GOOS=linux GOARCH=amd64 go build -o kz-domain-monitor
+          GOOS=linux GOARCH=amd64 go build -o kz-domain-monitor -ldflags "-X 'main.Version=${{ steps.tag.outputs.TAG }}'"
 
       - name: Build Windows binary
         run: |
-          GOOS=windows GOARCH=amd64 go build -o kz-domain-monitor.exe
+          GOOS=windows GOARCH=amd64 go build -o kz-domain-monitor.exe  -ldflags "-X 'main.Version=${{ steps.tag.outputs.TAG }}'"
 
       - name: Upload binaries
         uses: actions/upload-artifact@v4
@@ -62,6 +66,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          build-args: |
+            APP_VERSION=${{ steps.tag.outputs.TAG }}
           push: true
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/kz-domain-monitor:${{ steps.tag.outputs.TAG }}

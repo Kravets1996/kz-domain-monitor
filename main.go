@@ -1,16 +1,27 @@
 package main
 
 import (
+	"fmt"
 	"kz-domain-monitor/internal/api"
 	"kz-domain-monitor/internal/config"
 	"kz-domain-monitor/internal/notification"
 	"log"
+	"os"
 	"time"
 
 	"github.com/joho/godotenv"
 )
 
+var Version = "dev"
+
 func main() {
+	if len(os.Args) > 1 {
+		if os.Args[1] == "version" {
+			fmt.Printf("kz-domain-monitor version %s\n", Version)
+			return
+		}
+	}
+
 	err := godotenv.Load()
 
 	if err != nil {
