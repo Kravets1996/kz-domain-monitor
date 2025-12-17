@@ -1,0 +1,88 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build:
+    name: Build binaries
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.5'
+
+      - name: Build Linux binary
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o kz-domain-monitor
+
+      - name: Build Windows binary
+        run: |
+          GOOS=windows GOARCH=amd64 go build -o kz-domain-monitor.exe
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: binaries
+          path: |
+            kz-domain-monitor
+            kz-domain-monitor.exe
+
+  docker:
+    name: Build & push Docker image
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract tag
+        id: tag
+        run: echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Build and push image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/kz-domain-monitor:${{ steps.tag.outputs.TAG }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/kz-domain-monitor:latest
+
+  release:
+    name: Create GitHub release
+    runs-on: ubuntu-latest
+    needs: [build, docker]
+
+    steps:
+      - name: Download binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: binaries
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            kz-domain-monitor
+            kz-domain-monitor.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

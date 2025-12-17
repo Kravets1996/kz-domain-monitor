@@ -10,6 +10,8 @@
 Основана на API [ps.kz](https://ps.kz/). 
 Для работы необходима регистрация и получение токена в личном кабинете (бесплатно).
 
+![ps.png](.github/ps.png)
+
 ## Для кого эта утилита?
 Системных администраторов, владельцев сайтов, команд разработки, которые хотят узнавать о проблемах с оплатой домена
 заранее, а не когда домен уже отключен и сайт не работает.
@@ -25,7 +27,7 @@ docker run --rm -e DOMAIN_LIST=example.kz -e PS_GRAPHQL_TOKEN='****' kravets1996
 ## Установка
 
 Для начала загрузите файл .env для настройки утилиты:
-[Ссылка]()
+[Ссылка](https://raw.githubusercontent.com/Kravets1996/kz-domain-monitor/refs/heads/main/.env.example)
 ```shell
 wget -O .env https://raw.githubusercontent.com/Kravets1996/kz-domain-monitor/refs/heads/main/.env.example
 ```
@@ -37,7 +39,7 @@ wget https://github.com/Kravets1996/kz-domain-monitor/releases/latest/download/k
 
 chmod +x kz-domain-monitor
 ```
-#### Windows
+#### Windows / Windows Server
 [Скачать](https://github.com/Kravets1996/kz-domain-monitor/releases/latest/download/kz-domain-monitor.exe)
 [Страница Release в Github](https://github.com/Kravets1996/kz-domain-monitor/releases)
 

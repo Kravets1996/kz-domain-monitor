@@ -48,7 +48,7 @@ func GetDomainInfo(domainName string) (string, bool) {
 		return "❗️ Error parsing date: " + err.Error(), false
 	}
 
-	diff := exDate.Sub(time.Now())
+	diff := time.Until(exDate)
 	days := int64(diff.Hours() / 24)
 
 	var icon string
