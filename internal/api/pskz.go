@@ -96,8 +96,8 @@ func sendRequest(url string, query GraphQLRequest) (*GraphQLResponse, error) {
 	defer response.Body.Close()
 
 	if response.StatusCode != 200 {
-		log.Printf("Request status: %s", response.StatusCode)
-		return nil, fmt.Errorf("request status error: %s", response.Status)
+		log.Printf("Request status: %d", response.StatusCode)
+		return nil, fmt.Errorf("request status error: %d", response.StatusCode)
 	}
 
 	err = json.NewDecoder(response.Body).Decode(&gqlResponse)
