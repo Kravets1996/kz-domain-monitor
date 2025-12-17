@@ -45,7 +45,8 @@ func GetDomainInfo(domainName string) (string, bool) {
 
 	exDate, err := time.Parse(time.RFC3339, response.Data.Domains.Whois.Whois.Info.Domain.ExDate)
 	if err != nil {
-		return "❗️ Error parsing date: " + err.Error(), false
+		log.Println("❗️ Error parsing date: " + err.Error())
+		return "❗️ Дата истечения оплаты домена недоступна: " + err.Error(), false
 	}
 
 	diff := time.Until(exDate)
