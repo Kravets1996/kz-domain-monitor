@@ -38,6 +38,11 @@ func GetDomainInfo(domainName string) (string, bool) {
 		return "❗️ " + err.Error(), false
 	}
 
+	if response.Data.Domains.Whois.Whois.Available == true {
+		log.Println("❗️ Домен доступен для регистрации: " + domainName)
+		return "❗️ Домен доступен для регистрации: " + domainName, true
+	}
+
 	exDate, err := time.Parse(time.RFC3339, response.Data.Domains.Whois.Whois.Info.Domain.ExDate)
 	if err != nil {
 		return "❗️ Error parsing date: " + err.Error(), false
@@ -91,14 +96,14 @@ func sendRequest(url string, query GraphQLRequest) (*GraphQLResponse, error) {
 	defer response.Body.Close()
 
 	if response.StatusCode != 200 {
-		log.Printf("Request status: %s", err)
+		log.Printf("Request status: %s", response.StatusCode)
 		return nil, fmt.Errorf("request status error: %s", response.Status)
 	}
 
 	err = json.NewDecoder(response.Body).Decode(&gqlResponse)
 	if err != nil {
 		log.Println("Failed to parse JSON response:", err.Error())
-		return nil, err
+		return nil, fmt.Errorf("failed to parse JSON response: %s", err.Error())
 	}
 
 	return &gqlResponse, nil
@@ -118,6 +123,8 @@ func retry(r *http.Request) (*http.Response, error) {
 		if err == nil {
 			break
 		}
+
+		log.Println("Retrying request:", err.Error())
 
 		retries--
 
