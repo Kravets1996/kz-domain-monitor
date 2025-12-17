@@ -38,7 +38,7 @@ func GetDomainInfo(domainName string) (string, bool) {
 		return "❗️ " + err.Error(), false
 	}
 
-	if response.Data.Domains.Whois.Whois.Available == true {
+	if response.Data.Domains.Whois.Whois.Available {
 		log.Println("❗️ Домен доступен для регистрации: " + domainName)
 		return "❗️ Домен доступен для регистрации: " + domainName, true
 	}
