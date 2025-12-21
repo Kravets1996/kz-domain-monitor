@@ -51,8 +51,8 @@ docker run --rm -v $(pwd)/.env:/app/.env kravets1996/kz-domain-monitor
 ### Kubernetes
 ```shell
 kubectl create namespace kz-domain-monitor
-kubectl apply -n kz-domain-monitor -f k8s/configmap.yml
-kubectl apply -n kz-domain-monitor -f k8s/cronjob.yml
+kubectl apply -n kz-domain-monitor -f https://raw.githubusercontent.com/Kravets1996/kz-domain-monitor/refs/heads/main/k8s/configmap.yml
+kubectl apply -n kz-domain-monitor -f https://raw.githubusercontent.com/Kravets1996/kz-domain-monitor/refs/heads/main/k8s/cronjob.yml
 ```
 
 ### Source
