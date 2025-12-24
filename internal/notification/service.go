@@ -10,6 +10,10 @@ import (
 func SendNotification(results []string, hasError bool) {
 	cfg := config.GetConfig()
 
+	if len(results) == 0 {
+		return
+	}
+
 	message := "До истечения домена осталось: \n"
 
 	message = message + strings.Join(results, "\n")
