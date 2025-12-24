@@ -5,6 +5,7 @@ metadata:
   name: kz-domain-monitor
 spec:
   schedule: "0 14 * * *"
+  timeZone: "Asia/Almaty"
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 3
