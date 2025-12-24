@@ -43,7 +43,9 @@ func main() {
 
 		hasError = hasError || !domain.IsOk()
 
-		messages = append(messages, message)
+		if domain.ShouldSend() {
+			messages = append(messages, message)
+		}
 
 		if i < len(cfg.DomainList)-1 {
 			// TODO Настраиваемый интервал через .env

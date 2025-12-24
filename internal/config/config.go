@@ -9,11 +9,12 @@ import (
 var Configuration Config
 
 type Config struct {
-	PSApiToken   string
-	DomainList   []string
-	DaysToExpire int64
-	SendSuccess  bool
-	Telegram     TelegramConfig
+	PSApiToken     string
+	DomainList     []string
+	DaysToExpire   int64
+	SendSuccess    bool
+	SendOnlyErrors bool
+	Telegram       TelegramConfig
 }
 
 type TelegramConfig struct {
@@ -26,10 +27,11 @@ func Init() {
 	daysToExpireInt, _ := strconv.ParseInt(getEnv(`DAYS_TO_EXPIRE`, "5"), 10, 64)
 
 	Configuration = Config{
-		PSApiToken:   getEnvStrict(`PS_GRAPHQL_TOKEN`),
-		DomainList:   strings.Split(getEnvStrict(`DOMAIN_LIST`), ","),
-		DaysToExpire: daysToExpireInt,
-		SendSuccess:  getEnv(`SEND_SUCCESS`, "true") == "true",
+		PSApiToken:     getEnvStrict(`PS_GRAPHQL_TOKEN`),
+		DomainList:     strings.Split(getEnvStrict(`DOMAIN_LIST`), ","),
+		DaysToExpire:   daysToExpireInt,
+		SendSuccess:    getEnv(`SEND_ON_SUCCESS`, "true") == "true",
+		SendOnlyErrors: getEnv(`SEND_ONLY_ERRORS`, "false") == "true",
 		Telegram: TelegramConfig{
 			Enabled:  getEnv(`TELEGRAM_ENABLED`, "true") == "true",
 			BotToken: os.Getenv(`TELEGRAM_BOT_TOKEN`),

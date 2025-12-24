@@ -71,6 +71,16 @@ func (domain Domain) IsOk() bool {
 	return !domain.IsAvailable && !domain.isCloseToExpire()
 }
 
+func (domain Domain) ShouldSend() bool {
+	// Ошибки отправляются всегда.
+	if !domain.IsOk() {
+		return true
+	}
+
+	// Успешные проверки - только если нет флага OnlyErrors
+	return !config.GetConfig().SendOnlyErrors
+}
+
 func (domain Domain) GetMessage() string {
 	if domain.Error != nil {
 		return "❗️ " + domain.Error.Error()
