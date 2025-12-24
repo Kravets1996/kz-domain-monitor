@@ -1,0 +1,63 @@
+### Cronjob отправляет ежедневно только доменные имена с проблемами и раз в неделю - полный список.
+
+# Ежедневно - только заканчивающиеся домены
+# SEND_ONLY_ERRORS=true
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: kz-domain-monitor-daily
+spec:
+  schedule: "0 14 * * 0,2-6"
+  timeZone: "Asia/Almaty"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: scheduler
+              image: kravets1996/kz-domain-monitor:latest
+              imagePullPolicy: IfNotPresent
+              workingDir: /app
+              command: ["kz-domain-monitor"]
+              env:
+                - name: SEND_ONLY_ERRORS
+                  value: "true"
+              envFrom:
+                - configMapRef:
+                    name: kz-domain-monitor
+
+# Раз в неделю - полный список доменов
+# SEND_ONLY_ERRORS=false
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: kz-domain-monitor-weekly
+spec:
+  schedule: "0 14 * * 1"
+  timeZone: "Asia/Almaty"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: scheduler
+              image: kravets1996/kz-domain-monitor:latest
+              imagePullPolicy: IfNotPresent
+              workingDir: /app
+              command: ["kz-domain-monitor"]
+              env:
+                - name: SEND_ONLY_ERRORS
+                  value: "false"
+              envFrom:
+                - configMapRef:
+                    name: kz-domain-monitor
