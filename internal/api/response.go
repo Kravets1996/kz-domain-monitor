@@ -21,3 +21,11 @@ type GraphQLResponse struct {
 		} `json:"domains"`
 	} `json:"data"`
 }
+
+func (r GraphQLResponse) IsAvailable() bool {
+	return r.Data.Domains.Whois.Whois.Available
+}
+
+func (r GraphQLResponse) GetExpirationDate() string {
+	return r.Data.Domains.Whois.Whois.Info.Domain.ExDate
+}

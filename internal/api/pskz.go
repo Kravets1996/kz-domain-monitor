@@ -14,8 +14,8 @@ var client = http.Client{
 	Timeout: time.Second * 10,
 }
 
-func GetDomainInfo(domainName string) (string, bool) {
-	cfg := config.GetConfig()
+func GetDomainInfo(domainName string) Domain {
+	// TODO Проверка что домен .kz
 
 	query := fmt.Sprintf(`query {
 		domains {
@@ -35,39 +35,10 @@ func GetDomainInfo(domainName string) (string, bool) {
 	response, err := sendRequest("https://console.ps.kz/domains/graphql", GraphQLRequest{Query: query})
 
 	if err != nil {
-		return "❗️ " + err.Error(), false
+		return Domain{Error: err}
 	}
 
-	if response.Data.Domains.Whois.Whois.Available {
-		log.Println("❗️ Домен доступен для регистрации: " + domainName)
-		return "❗️ Домен доступен для регистрации: " + domainName, true
-	}
-
-	exDate, err := time.Parse(time.RFC3339, response.Data.Domains.Whois.Whois.Info.Domain.ExDate)
-	if err != nil {
-		log.Println("❗️ Error parsing date: " + err.Error())
-		return "❗️ Дата истечения оплаты домена недоступна: " + err.Error(), false
-	}
-
-	diff := time.Until(exDate)
-	days := int64(diff.Hours() / 24)
-
-	var icon string
-	var result bool
-
-	if days > cfg.DaysToExpire {
-		icon = "✅"
-		result = true
-	} else {
-		icon = "❗️"
-		result = false
-	}
-
-	message := fmt.Sprintf("%s %d дней - %s", icon, days, domainName)
-
-	log.Println(message)
-
-	return message, result
+	return NewDomain(domainName, response.IsAvailable(), response.GetExpirationDate())
 }
 
 func sendRequest(url string, query GraphQLRequest) (*GraphQLResponse, error) {

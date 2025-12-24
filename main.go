@@ -32,17 +32,23 @@ func main() {
 	cfg := config.GetConfig()
 
 	var messages []string
-	var hasError bool
+	hasError := false
 
-	for _, domain := range cfg.DomainList {
-		message, result := api.GetDomainInfo(domain)
+	for i, domainName := range cfg.DomainList {
+		domain := api.GetDomainInfo(domainName)
 
-		hasError = hasError || !result
+		message := domain.GetMessage()
+
+		log.Println(message)
+
+		hasError = hasError || !domain.IsOk()
 
 		messages = append(messages, message)
 
-		// TODO Настраиваемый интервал через .env
-		time.Sleep(time.Second * 3)
+		if i < len(cfg.DomainList)-1 {
+			// TODO Настраиваемый интервал через .env
+			time.Sleep(time.Second * 3)
+		}
 	}
 
 	if !hasError && !cfg.SendSuccess {
@@ -51,5 +57,9 @@ func main() {
 
 	notification.SendNotification(messages, hasError)
 
-	// TODO Exit code
+	if hasError {
+		os.Exit(1)
+	}
+
+	os.Exit(0)
 }
