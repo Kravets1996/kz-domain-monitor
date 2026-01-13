@@ -7,6 +7,7 @@ import (
 	"kz-domain-monitor/internal/config"
 	"log"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -69,6 +70,13 @@ func sendRequest(url string, query GraphQLRequest) (*GraphQLResponse, error) {
 
 	if response.StatusCode != 200 {
 		log.Printf("Request status: %d", response.StatusCode)
+
+		bodyBytes := new(bytes.Buffer)
+		bodyBytes.ReadFrom(response.Body)
+		bodyString := bodyBytes.String()
+
+		writeErrorToFile(fmt.Sprintf("Request status error: %d, Body: %s", response.StatusCode, bodyString))
+
 		return nil, fmt.Errorf("request status error: %d", response.StatusCode)
 	}
 
@@ -106,4 +114,20 @@ func retry(r *http.Request) (*http.Response, error) {
 	}
 
 	return response, err
+}
+
+func writeErrorToFile(errorMsg string) {
+	f, err := os.OpenFile("error.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Printf("Failed to open log file: %v", err)
+		return
+	}
+	defer f.Close()
+
+	timestamp := time.Now().Format("2006-01-02 15:04:05")
+	logEntry := fmt.Sprintf("[%s] %s\n", timestamp, errorMsg)
+
+	if _, err := f.WriteString(logEntry); err != nil {
+		log.Printf("Failed to write to log file: %v", err)
+	}
 }
