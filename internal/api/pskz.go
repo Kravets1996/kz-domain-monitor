@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"kz-domain-monitor/internal/config"
 	"log"
 	"net/http"
@@ -71,11 +72,7 @@ func sendRequest(url string, query GraphQLRequest) (*GraphQLResponse, error) {
 	if response.StatusCode != 200 {
 		log.Printf("Request status: %d", response.StatusCode)
 
-		bodyBytes := new(bytes.Buffer)
-		bodyBytes.ReadFrom(response.Body)
-		bodyString := bodyBytes.String()
-
-		writeErrorToFile(fmt.Sprintf("Request status error: %d, Body: %s", response.StatusCode, bodyString))
+		writeErrorToFile(fmt.Sprintf("Request status error: %d, Body: %s", response.StatusCode, bodyToString(response.Body)))
 
 		return nil, fmt.Errorf("request status error: %d", response.StatusCode)
 	}
@@ -114,6 +111,15 @@ func retry(r *http.Request) (*http.Response, error) {
 	}
 
 	return response, err
+}
+
+func bodyToString(body io.ReadCloser) string {
+	bodyBytes := new(bytes.Buffer)
+	if _, err := bodyBytes.ReadFrom(body); err != nil {
+		log.Printf("Failed to read response body: %v", err)
+		return ""
+	}
+	return bodyBytes.String()
 }
 
 func writeErrorToFile(errorMsg string) {
