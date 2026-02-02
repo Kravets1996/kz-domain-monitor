@@ -11,7 +11,7 @@ import (
 )
 
 var client = http.Client{
-	Timeout: time.Second * 10,
+	Timeout: config.GetConfig().RequestDelay,
 }
 
 func GetDomainInfo(domainName string) Domain {
@@ -24,6 +24,10 @@ func GetDomainInfo(domainName string) Domain {
 					available 
 					info {
 						domain {
+							nameservers {
+								name
+								ip
+							}
 							exDate
 						}
 					}
@@ -38,7 +42,7 @@ func GetDomainInfo(domainName string) Domain {
 		return Domain{Error: err}
 	}
 
-	return NewDomain(domainName, response.IsAvailable(), response.GetExpirationDate())
+	return NewDomain(domainName, response.IsAvailable(), response.GetExpirationDate(), response.GetNameservers())
 }
 
 func sendRequest(url string, query GraphQLRequest) (*GraphQLResponse, error) {

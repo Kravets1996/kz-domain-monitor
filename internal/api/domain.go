@@ -11,9 +11,10 @@ type Domain struct {
 	IsAvailable    bool
 	ExpirationDate *time.Time
 	Error          error
+	Nameservers    []string
 }
 
-func NewDomain(name string, isAvailable bool, expirationDate string) Domain {
+func NewDomain(name string, isAvailable bool, expirationDate string, nameservers []string) Domain {
 	var datePointer *time.Time
 	date, err := time.Parse(time.RFC3339, expirationDate)
 
@@ -27,6 +28,7 @@ func NewDomain(name string, isAvailable bool, expirationDate string) Domain {
 		Name:           name,
 		IsAvailable:    isAvailable,
 		ExpirationDate: datePointer,
+		Nameservers:    nameservers,
 	}
 }
 
