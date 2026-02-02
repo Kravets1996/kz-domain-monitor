@@ -48,8 +48,7 @@ func main() {
 		}
 
 		if i < len(cfg.DomainList)-1 {
-			// TODO Настраиваемый интервал через .env
-			time.Sleep(time.Second * 3)
+			time.Sleep(cfg.RequestDelay)
 		}
 	}
 

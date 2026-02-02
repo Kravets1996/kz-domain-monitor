@@ -4,6 +4,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var Configuration Config
@@ -14,6 +15,7 @@ type Config struct {
 	DaysToExpire   int64
 	SendSuccess    bool
 	SendOnlyErrors bool
+	RequestDelay   time.Duration
 	Telegram       TelegramConfig
 }
 
@@ -25,6 +27,7 @@ type TelegramConfig struct {
 
 func Init() {
 	daysToExpireInt, _ := strconv.ParseInt(getEnv(`DAYS_TO_EXPIRE`, "5"), 10, 64)
+	requestDelayInt, _ := strconv.ParseInt(getEnv(`REQUEST_DELAY`, "3"), 10, 64)
 
 	Configuration = Config{
 		PSApiToken:     getEnvStrict(`PS_GRAPHQL_TOKEN`),
@@ -32,6 +35,7 @@ func Init() {
 		DaysToExpire:   daysToExpireInt,
 		SendSuccess:    getEnv(`SEND_ON_SUCCESS`, "true") == "true",
 		SendOnlyErrors: getEnv(`SEND_ONLY_ERRORS`, "false") == "true",
+		RequestDelay:   time.Second * time.Duration(requestDelayInt),
 		Telegram: TelegramConfig{
 			Enabled:  getEnv(`TELEGRAM_ENABLED`, "true") == "true",
 			BotToken: os.Getenv(`TELEGRAM_BOT_TOKEN`),
