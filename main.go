@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"sort"
 	"time"
 
 	"github.com/fynelabs/selfupdate"
@@ -41,26 +42,31 @@ func main() {
 	config.Init()
 	cfg := config.GetConfig()
 
-	var messages []string
+	var domains []api.Domain
 	hasError := false
 
 	for i, domainName := range cfg.DomainList {
 		domain := api.GetDomainInfo(domainName)
 
-		message := domain.GetMessage()
-
-		log.Println(message)
+		log.Println(domain.GetMessage())
 
 		hasError = hasError || !domain.IsOk()
 
 		if domain.ShouldSend() {
-			messages = append(messages, message)
+			domains = append(domains, domain)
 		}
 
 		if i < len(cfg.DomainList)-1 {
 			// TODO Настраиваемый интервал через .env
 			time.Sleep(time.Second * 3)
 		}
+	}
+
+	sortDomains(domains, cfg.SortOrder)
+
+	var messages []string
+	for _, domain := range domains {
+		messages = append(messages, domain.GetMessage())
 	}
 
 	if !hasError && !cfg.SendSuccess {
@@ -74,6 +80,25 @@ func main() {
 	}
 
 	os.Exit(0)
+}
+
+func sortDomains(domains []api.Domain, sortOrder string) {
+	switch sortOrder {
+	case "expiration":
+		sort.SliceStable(domains, func(i, j int) bool {
+			if domains[i].ExpirationDate == nil {
+				return true
+			}
+			if domains[j].ExpirationDate == nil {
+				return false
+			}
+			return domains[i].ExpirationDate.Before(*domains[j].ExpirationDate)
+		})
+	case "alphabet":
+		sort.SliceStable(domains, func(i, j int) bool {
+			return domains[i].Name < domains[j].Name
+		})
+	}
 }
 
 func printVersion() {

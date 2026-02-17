@@ -14,6 +14,7 @@ type Config struct {
 	DaysToExpire   int64
 	SendSuccess    bool
 	SendOnlyErrors bool
+	SortOrder      string
 	Telegram       TelegramConfig
 }
 
@@ -32,6 +33,7 @@ func Init() {
 		DaysToExpire:   daysToExpireInt,
 		SendSuccess:    getEnv(`SEND_ON_SUCCESS`, "true") == "true",
 		SendOnlyErrors: getEnv(`SEND_ONLY_ERRORS`, "false") == "true",
+		SortOrder:      getEnv(`SORT_ORDER`, "default"),
 		Telegram: TelegramConfig{
 			Enabled:  getEnv(`TELEGRAM_ENABLED`, "true") == "true",
 			BotToken: os.Getenv(`TELEGRAM_BOT_TOKEN`),
