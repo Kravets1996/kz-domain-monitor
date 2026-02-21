@@ -10,6 +10,7 @@ var Configuration Config
 
 type Config struct {
 	PSApiToken     string
+	DomainProvider string
 	DomainList     []string
 	DaysToExpire   int64
 	SendSuccess    bool
@@ -26,9 +27,18 @@ type TelegramConfig struct {
 
 func Init() {
 	daysToExpireInt, _ := strconv.ParseInt(getEnv(`DAYS_TO_EXPIRE`, "5"), 10, 64)
+	domainProvider := getEnv(`DOMAIN_PROVIDER`, "pskz")
+
+	psApiToken := ""
+	if domainProvider == "pskz" {
+		psApiToken = getEnvStrict(`PS_GRAPHQL_TOKEN`)
+	} else {
+		psApiToken = os.Getenv(`PS_GRAPHQL_TOKEN`)
+	}
 
 	Configuration = Config{
-		PSApiToken:     getEnvStrict(`PS_GRAPHQL_TOKEN`),
+		PSApiToken:     psApiToken,
+		DomainProvider: domainProvider,
 		DomainList:     strings.Split(getEnvStrict(`DOMAIN_LIST`), ","),
 		DaysToExpire:   daysToExpireInt,
 		SendSuccess:    getEnv(`SEND_ON_SUCCESS`, "true") == "true",

@@ -16,14 +16,17 @@ var client = http.Client{
 	Timeout: time.Second * 10,
 }
 
-func GetDomainInfo(domainName string) Domain {
+// PsKzProvider fetches domain info from the ps.kz GraphQL API.
+type PsKzProvider struct{}
+
+func (p *PsKzProvider) GetDomainInfo(domainName string) Domain {
 	// TODO Проверка что домен .kz
 
 	query := fmt.Sprintf(`query {
 		domains {
 			whois {
 				whois(domain:"%s") {
-					available 
+					available
 					info {
 						domain {
 							exDate
