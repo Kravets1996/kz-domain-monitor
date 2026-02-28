@@ -16,14 +16,17 @@ var client = http.Client{
 	Timeout: time.Second * 10,
 }
 
-func GetDomainInfo(domainName string) Domain {
+// PsKzProvider fetches domain info from the ps.kz GraphQL API.
+type PsKzProvider struct{}
+
+func (p *PsKzProvider) GetDomainInfo(domainName string) Domain {
 	// TODO Проверка что домен .kz
 
 	query := fmt.Sprintf(`query {
 		domains {
 			whois {
 				whois(domain:"%s") {
-					available 
+					available
 					info {
 						domain {
 							exDate
@@ -40,7 +43,20 @@ func GetDomainInfo(domainName string) Domain {
 		return Domain{Error: err}
 	}
 
-	return NewDomain(domainName, response.IsAvailable(), response.GetExpirationDate())
+	var datePointer *time.Time
+	date, err := time.Parse(time.RFC3339, response.GetExpirationDate())
+
+	if err != nil {
+		datePointer = nil
+	} else {
+		datePointer = &date
+	}
+
+	return Domain{
+		Name:           domainName,
+		IsAvailable:    response.IsAvailable(),
+		ExpirationDate: datePointer,
+	}
 }
 
 func sendRequest(url string, query GraphQLRequest) (*GraphQLResponse, error) {
