@@ -7,8 +7,8 @@
 - Поддерживает Windows/Linux/Docker/Kubernetes
 - Написана на Go
 
-Основана на API [ps.kz](https://ps.kz/). 
-Для работы необходима регистрация и получение токена в личном кабинете (бесплатно).
+По умолчанию использует публичный RDAP-сервис [rdap.nic.kz](https://rdap.nic.kz) — регистрация и токены не нужны.
+Также поддерживается API [ps.kz](https://ps.kz/) как альтернативный драйвер.
 
 ![ps.png](.github/ps.png)
 
@@ -18,7 +18,7 @@
 
 ## Быстрый старт (Docker)
 ```shell
-docker run --rm -e DOMAIN_LIST=example.kz -e PS_GRAPHQL_TOKEN='****' kravets1996/kz-domain-monitor
+docker run --rm -e DOMAIN_LIST=example.kz kravets1996/kz-domain-monitor
 ```
 
 ## Демо
@@ -67,6 +67,11 @@ go build -o kz-domain-monitor
 Отредактируйте файл .env (или ConfigMap при установке в Kubernetes) 
 и установите значения для обязательных переменных.
 
+### Выбор драйвера (провайдера данных)
+Драйвер выбирается переменной `DOMAIN_PROVIDER`:
+- `rdap` — по умолчанию, публичный RDAP-сервис rdap.nic.kz, регистрация и токены не нужны.
+- `pskz` — API ps.kz, требует токен доступа.
+
 ### Получение и настройка доступа к API ps.kz
 1. Создайте токен в кабинете ps.kz. https://console.ps.kz/account/iam/tokens?tab=my
 2. Укажите роль "Только чтение".
@@ -101,7 +106,7 @@ docker run --rm -v $(pwd)/.env:/app/.env kravets1996/kz-domain-monitor
 ### Планировщик
 Для периодической проверки доменов необходимо добавить запуск команды в планировщик системы.
 
-Рекомендуется устанавливать проверку не чаще 1 раза в сутки, чтобы не столкнуться с Rate Limit ps.kz.
+Рекомендуется устанавливать проверку не чаще 1 раза в сутки, чтобы не столкнуться с Rate Limit rdap.nic.kz или ps.kz.
 
 #### Linux
 Добавьте новую строку в файл /etc/crontab
@@ -141,6 +146,7 @@ docker run --rm -v $(pwd)/.env:/app/.env kz-domain-monitor
 ```
 
 Полезные ссылки:
+- [RDAP KazNIC](https://nic.kz/docs/announc_20_01_2026.jsp)
 - [Инструкция по API GraphQL](https://console.ps.kz/docs/faq/pscloud-api/ps-cloud-api/instrukciya-po-api-graphql)
 - [GraphQL Playground](https://console.ps.kz/domains/graphql)
 
