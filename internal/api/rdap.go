@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
+	"time"
 )
 
 // RDAPResponse represents the RDAP API response from nic.kz.
@@ -30,6 +32,21 @@ func (r RDAPResponse) GetExpirationDate() string {
 	return ""
 }
 
+const rdapDateLayout = "2006-01-02 15:04:05 -07:00"
+
+// parseRDAPDate parses dates in the format "2031-07-14 06:47:20 (GMT+0:00)".
+func parseRDAPDate(s string) (time.Time, error) {
+	if idx := strings.Index(s, " (GMT"); idx != -1 {
+		tz := s[idx+5 : len(s)-1] // e.g. "+0:00"
+		// Normalize single-digit hour offset: "+0:00" -> "+00:00"
+		if len(tz) > 2 && tz[2] == ':' {
+			tz = tz[:1] + "0" + tz[1:]
+		}
+		return time.Parse(rdapDateLayout, s[:idx]+" "+tz)
+	}
+	return time.Parse(rdapDateLayout, s)
+}
+
 // RDAPProvider fetches domain info from the nic.kz RDAP endpoint.
 type RDAPProvider struct {
 	BaseURL string // defaults to "https://rdap.nic.kz"
@@ -52,7 +69,6 @@ func rdapGetDomainInfoFromURL(url, domainName string) Domain {
 	if err != nil {
 		return Domain{Error: err}
 	}
-	req.Header.Set("Accept", "application/rdap+json")
 
 	resp, err := retry(req)
 	if err != nil {
@@ -77,5 +93,21 @@ func rdapGetDomainInfoFromURL(url, domainName string) Domain {
 		return Domain{Error: fmt.Errorf("failed to parse RDAP JSON response: %s", err.Error())}
 	}
 
-	return NewDomain(domainName, false, rdapResp.GetExpirationDate())
+	var datePointer *time.Time
+
+	dateStr := rdapResp.GetExpirationDate()
+
+	date, err := parseRDAPDate(dateStr)
+
+	if err != nil {
+		datePointer = nil
+	} else {
+		datePointer = &date
+	}
+
+	return Domain{
+		Name:           domainName,
+		IsAvailable:    false,
+		ExpirationDate: datePointer,
+	}
 }

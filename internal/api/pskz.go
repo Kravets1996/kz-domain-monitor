@@ -43,7 +43,20 @@ func (p *PsKzProvider) GetDomainInfo(domainName string) Domain {
 		return Domain{Error: err}
 	}
 
-	return NewDomain(domainName, response.IsAvailable(), response.GetExpirationDate())
+	var datePointer *time.Time
+	date, err := time.Parse(time.RFC3339, response.GetExpirationDate())
+
+	if err != nil {
+		datePointer = nil
+	} else {
+		datePointer = &date
+	}
+
+	return Domain{
+		Name:           domainName,
+		IsAvailable:    response.IsAvailable(),
+		ExpirationDate: datePointer,
+	}
 }
 
 func sendRequest(url string, query GraphQLRequest) (*GraphQLResponse, error) {

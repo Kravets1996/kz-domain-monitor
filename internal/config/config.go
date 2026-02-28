@@ -27,7 +27,7 @@ type TelegramConfig struct {
 
 func Init() {
 	daysToExpireInt, _ := strconv.ParseInt(getEnv(`DAYS_TO_EXPIRE`, "5"), 10, 64)
-	domainProvider := getEnv(`DOMAIN_PROVIDER`, "pskz")
+	domainProvider := getEnv(`DOMAIN_PROVIDER`, "rdap")
 
 	psApiToken := ""
 	if domainProvider == "pskz" {
