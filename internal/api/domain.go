@@ -13,23 +13,6 @@ type Domain struct {
 	Error          error
 }
 
-func NewDomain(name string, isAvailable bool, expirationDate string) Domain {
-	var datePointer *time.Time
-	date, err := time.Parse(time.RFC3339, expirationDate)
-
-	if err != nil {
-		datePointer = nil
-	} else {
-		datePointer = &date
-	}
-
-	return Domain{
-		Name:           name,
-		IsAvailable:    isAvailable,
-		ExpirationDate: datePointer,
-	}
-}
-
 func (domain Domain) GetDaysToExpire() int64 {
 	diff := time.Until(*domain.ExpirationDate)
 	days := int64(diff.Hours() / 24)
