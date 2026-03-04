@@ -11,11 +11,13 @@ var Configuration Config
 
 type Config struct {
 	PSApiToken     string
+	DomainProvider string
 	DomainList     []string
 	DaysToExpire   int64
 	SendSuccess    bool
 	SendOnlyErrors bool
 	RequestDelay   time.Duration
+	SortOrder      string
 	Telegram       TelegramConfig
 }
 
@@ -28,13 +30,23 @@ type TelegramConfig struct {
 func Init() {
 	daysToExpireInt, _ := strconv.ParseInt(getEnv(`DAYS_TO_EXPIRE`, "5"), 10, 64)
 	requestDelayInt, _ := strconv.ParseInt(getEnv(`REQUEST_DELAY`, "3"), 10, 64)
+	domainProvider := getEnv(`DOMAIN_PROVIDER`, "rdap")
+
+	psApiToken := ""
+	if domainProvider == "pskz" {
+		psApiToken = getEnvStrict(`PS_GRAPHQL_TOKEN`)
+	} else {
+		psApiToken = os.Getenv(`PS_GRAPHQL_TOKEN`)
+	}
 
 	Configuration = Config{
-		PSApiToken:     getEnvStrict(`PS_GRAPHQL_TOKEN`),
+		PSApiToken:     psApiToken,
+		DomainProvider: domainProvider,
 		DomainList:     strings.Split(getEnvStrict(`DOMAIN_LIST`), ","),
 		DaysToExpire:   daysToExpireInt,
 		SendSuccess:    getEnv(`SEND_ON_SUCCESS`, "true") == "true",
 		SendOnlyErrors: getEnv(`SEND_ONLY_ERRORS`, "false") == "true",
+		SortOrder:      getEnv(`SORT_ORDER`, "default"),
 		RequestDelay:   time.Second * time.Duration(requestDelayInt),
 		Telegram: TelegramConfig{
 			Enabled:  getEnv(`TELEGRAM_ENABLED`, "true") == "true",

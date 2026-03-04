@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"kz-domain-monitor/internal/config"
 	"log"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -14,14 +16,17 @@ var client = http.Client{
 	Timeout: time.Second * 10,
 }
 
-func GetDomainInfo(domainName string) Domain {
+// PsKzProvider fetches domain info from the ps.kz GraphQL API.
+type PsKzProvider struct{}
+
+func (p *PsKzProvider) GetDomainInfo(domainName string) Domain {
 	// TODO Проверка что домен .kz
 
 	query := fmt.Sprintf(`query {
 		domains {
 			whois {
 				whois(domain:"%s") {
-					available 
+					available
 					info {
 						domain {
 							exDate
@@ -38,7 +43,20 @@ func GetDomainInfo(domainName string) Domain {
 		return Domain{Error: err}
 	}
 
-	return NewDomain(domainName, response.IsAvailable(), response.GetExpirationDate())
+	var datePointer *time.Time
+	date, err := time.Parse(time.RFC3339, response.GetExpirationDate())
+
+	if err != nil {
+		datePointer = nil
+	} else {
+		datePointer = &date
+	}
+
+	return Domain{
+		Name:           domainName,
+		IsAvailable:    response.IsAvailable(),
+		ExpirationDate: datePointer,
+	}
 }
 
 func sendRequest(url string, query GraphQLRequest) (*GraphQLResponse, error) {
@@ -69,6 +87,9 @@ func sendRequest(url string, query GraphQLRequest) (*GraphQLResponse, error) {
 
 	if response.StatusCode != 200 {
 		log.Printf("Request status: %d", response.StatusCode)
+
+		writeErrorToFile(fmt.Sprintf("Request status error: %d, Body: %s", response.StatusCode, bodyToString(response.Body)))
+
 		return nil, fmt.Errorf("request status error: %d", response.StatusCode)
 	}
 
@@ -106,4 +127,29 @@ func retry(r *http.Request) (*http.Response, error) {
 	}
 
 	return response, err
+}
+
+func bodyToString(body io.ReadCloser) string {
+	bodyBytes := new(bytes.Buffer)
+	if _, err := bodyBytes.ReadFrom(body); err != nil {
+		log.Printf("Failed to read response body: %v", err)
+		return ""
+	}
+	return bodyBytes.String()
+}
+
+func writeErrorToFile(errorMsg string) {
+	f, err := os.OpenFile("error.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Printf("Failed to open log file: %v", err)
+		return
+	}
+	defer f.Close()
+
+	timestamp := time.Now().Format("2006-01-02 15:04:05")
+	logEntry := fmt.Sprintf("[%s] %s\n", timestamp, errorMsg)
+
+	if _, err := f.WriteString(logEntry); err != nil {
+		log.Printf("Failed to write to log file: %v", err)
+	}
 }
