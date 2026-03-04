@@ -52,12 +52,12 @@ func (domain Domain) getIcon() string {
 		return "❌"
 	}
 
-	if domain.isCloseToExpire() {
-		return "⚠️"
-	}
-
 	if domain.isExpired() {
 		return "❗️"
+	}
+
+	if domain.isCloseToExpire() {
+		return "⚠️"
 	}
 
 	return "✅"
