@@ -19,12 +19,18 @@ type Config struct {
 	RequestDelay   time.Duration
 	SortOrder      string
 	Telegram       TelegramConfig
+	Slack          SlackConfig
 }
 
 type TelegramConfig struct {
 	Enabled  bool
 	BotToken string
 	ChatID   string
+}
+
+type SlackConfig struct {
+	Enabled    bool
+	WebhookURL string
 }
 
 func Init() {
@@ -53,11 +59,21 @@ func Init() {
 			BotToken: os.Getenv(`TELEGRAM_BOT_TOKEN`),
 			ChatID:   os.Getenv(`TELEGRAM_CHAT_ID`),
 		},
+		Slack: SlackConfig{
+			Enabled:    getEnv(`SLACK_ENABLED`, "false") == "true",
+			WebhookURL: os.Getenv(`SLACK_WEBHOOK_URL`),
+		},
 	}
 
 	if Configuration.Telegram.Enabled {
 		if Configuration.Telegram.BotToken == "" || Configuration.Telegram.ChatID == "" {
 			panic("Telegram config is not set")
+		}
+	}
+
+	if Configuration.Slack.Enabled {
+		if Configuration.Slack.WebhookURL == "" {
+			panic("Slack webhook URL is not set")
 		}
 	}
 }
