@@ -25,4 +25,12 @@ func SendNotification(results []string, hasError bool) {
 			panic(err)
 		}
 	}
+
+	if cfg.Slack.Enabled {
+		err := channels.NewSlackChannel(cfg.Slack.WebhookURL).Send(message)
+		if err != nil {
+			fmt.Println(err)
+			panic(err)
+		}
+	}
 }
