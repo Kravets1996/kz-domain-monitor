@@ -77,7 +77,8 @@ go build -o kz-domain-monitor
 2. Укажите роль "Только чтение".
 3. Скопируйте сгенерированный токен в переменную `PS_GRAPHQL_TOKEN`
 
-### Настройка уведомлений в Telegram
+### Настройка уведомлений
+#### Telegram
 1. Создайте Telegram-бота с помощью [BotFather](https://telegram.me/BotFather).
 2. Создайте и скопируйте токен нового бота.
 3. Установите токен в переменную `TELEGRAM_BOT_TOKEN`.
@@ -85,6 +86,12 @@ go build -o kz-domain-monitor
 5. Перейдите по ссылке (замените <BOT_TOKEN> на токен бота, полученный на шаге 2) `https://api.telegram.org/bot<BOT_TOKEN>/getUpdates`
 6. Найдите ID чата в полученном JSON `"chat":{"id":123456789}`
 7. Установите полученный ID в переменную `TELEGRAM_CHAT_ID`
+8. Включите уведомления с помощью переменной `TELEGRAM_ENABLED`
+
+#### Slack
+1. Создайте входящий webhook.
+2. Скопируйте URL в переменную `SLACK_WEBHOOK_URL`
+3. Включите уведомления с помощью переменной `SLACK_ENABLED`
 
 ### Доменные имена
 Перечислите доменные имена, которые вы хотите отслеживать в переменной `DOMAIN_LIST`.
