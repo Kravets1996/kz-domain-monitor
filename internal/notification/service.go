@@ -33,4 +33,20 @@ func SendNotification(results []string, hasError bool) {
 			panic(err)
 		}
 	}
+
+	if cfg.Email.Enabled {
+		err := channels.NewEmailChannel(cfg.Email.Host, cfg.Email.Port, cfg.Email.Username, cfg.Email.Password, cfg.Email.From, cfg.Email.To).Send(message)
+		if err != nil {
+			fmt.Println(err)
+			panic(err)
+		}
+	}
+
+	if cfg.Webhook.Enabled {
+		err := channels.NewWebhookChannel(cfg.Webhook.URL).Send(hasError, message)
+		if err != nil {
+			fmt.Println(err)
+			panic(err)
+		}
+	}
 }
