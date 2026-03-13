@@ -3,8 +3,10 @@ package channels
 import (
 	"crypto/tls"
 	"fmt"
+	"net"
 	"net/smtp"
 	"strings"
+	"time"
 )
 
 type EmailChannel struct {
@@ -44,7 +46,9 @@ func (e *EmailChannel) Send(message string) error {
 		ServerName: e.host,
 	}
 
-	conn, err := tls.Dial("tcp", addr, tlsConfig)
+	dialer := &net.Dialer{Timeout: 10 * time.Second}
+	conn, err := tls.DialWithDialer(dialer, "tcp", addr, tlsConfig)
+
 	if err != nil {
 		// Fallback: try plain SMTP with STARTTLS
 		return e.sendSTARTTLS(addr, auth, body)
