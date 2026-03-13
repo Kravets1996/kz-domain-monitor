@@ -1,6 +1,8 @@
 package config
 
 import (
+	"encoding/json"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -22,6 +24,39 @@ type Config struct {
 	Slack          SlackConfig
 	Email          EmailConfig
 	Webhook        WebhookConfig
+}
+
+// jsonDomainEntry represents either a domain entry or a group in the JSON config.
+type jsonDomainEntry struct {
+	Domain string            `json:"domain"`
+	Title  string            `json:"title"`
+	Items  []jsonDomainEntry `json:"items"`
+}
+
+// loadDomainsFromJSON reads a JSON config file and extracts the flat list of domain names.
+func loadDomainsFromJSON(path string) ([]string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var entries []jsonDomainEntry
+	if err := json.Unmarshal(data, &entries); err != nil {
+		return nil, err
+	}
+	return extractDomains(entries), nil
+}
+
+func extractDomains(entries []jsonDomainEntry) []string {
+	var domains []string
+	for _, e := range entries {
+		if e.Domain != "" {
+			domains = append(domains, strings.TrimSpace(e.Domain))
+		}
+		if len(e.Items) > 0 {
+			domains = append(domains, extractDomains(e.Items)...)
+		}
+	}
+	return domains
 }
 
 type TelegramConfig struct {
@@ -50,6 +85,27 @@ type WebhookConfig struct {
 	URL     string
 }
 
+func loadDomains() []string {
+	jsonFile := os.Getenv(`DOMAIN_CONFIG_FILE`)
+	envList := os.Getenv(`DOMAIN_LIST`)
+
+	if jsonFile != "" {
+		if envList != "" {
+			log.Println("WARNING: Both DOMAIN_CONFIG_FILE and DOMAIN_LIST are set. DOMAIN_CONFIG_FILE takes priority.")
+		}
+		domains, err := loadDomainsFromJSON(jsonFile)
+		if err != nil {
+			panic("Failed to load DOMAIN_CONFIG_FILE: " + err.Error())
+		}
+		return domains
+	}
+
+	if envList == "" {
+		panic("Environment variable DOMAIN_LIST is not set")
+	}
+	return strings.Split(envList, ",")
+}
+
 func Init() {
 	daysToExpireInt, _ := strconv.ParseInt(getEnv(`DAYS_TO_EXPIRE`, "5"), 10, 64)
 	requestDelayInt, _ := strconv.ParseInt(getEnv(`REQUEST_DELAY`, "3"), 10, 64)
@@ -62,10 +118,12 @@ func Init() {
 		psApiToken = os.Getenv(`PS_GRAPHQL_TOKEN`)
 	}
 
+	domainList := loadDomains()
+
 	Configuration = Config{
 		PSApiToken:     psApiToken,
 		DomainProvider: domainProvider,
-		DomainList:     strings.Split(getEnvStrict(`DOMAIN_LIST`), ","),
+		DomainList:     domainList,
 		DaysToExpire:   daysToExpireInt,
 		SendSuccess:    getEnv(`SEND_ON_SUCCESS`, "true") == "true",
 		SendOnlyErrors: getEnv(`SEND_ONLY_ERRORS`, "false") == "true",
