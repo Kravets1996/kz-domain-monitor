@@ -92,7 +92,7 @@ func buildGroupedMessages(domains []api.Domain, groups []config.DomainGroup) []s
 	}
 
 	var messages []string
-	for _, group := range groups {
+	for index, group := range groups {
 		var groupMessages []string
 		for _, name := range group.Domains {
 			if d, ok := domainMap[name]; ok {
@@ -101,9 +101,13 @@ func buildGroupedMessages(domains []api.Domain, groups []config.DomainGroup) []s
 		}
 		if len(groupMessages) > 0 {
 			if group.Title != "" {
-				messages = append(messages, "*"+group.Title+"*")
+				messages = append(messages, group.Title+":")
 			}
 			messages = append(messages, groupMessages...)
+
+			if index < len(groups)-1 {
+				messages = append(messages, "")
+			}
 		}
 	}
 	return messages
