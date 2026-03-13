@@ -64,8 +64,12 @@ func main() {
 	sortDomains(domains, cfg.SortOrder)
 
 	var messages []string
-	for _, domain := range domains {
-		messages = append(messages, domain.GetMessage())
+	if cfg.SortOrder == "group" && len(cfg.DomainGroups) > 0 {
+		messages = buildGroupedMessages(domains, cfg.DomainGroups)
+	} else {
+		for _, domain := range domains {
+			messages = append(messages, domain.GetMessage())
+		}
 	}
 
 	if !hasError && !cfg.SendSuccess {
@@ -79,6 +83,30 @@ func main() {
 	}
 
 	os.Exit(0)
+}
+
+func buildGroupedMessages(domains []api.Domain, groups []config.DomainGroup) []string {
+	domainMap := make(map[string]api.Domain, len(domains))
+	for _, d := range domains {
+		domainMap[d.Name] = d
+	}
+
+	var messages []string
+	for _, group := range groups {
+		var groupMessages []string
+		for _, name := range group.Domains {
+			if d, ok := domainMap[name]; ok {
+				groupMessages = append(groupMessages, d.GetMessage())
+			}
+		}
+		if len(groupMessages) > 0 {
+			if group.Title != "" {
+				messages = append(messages, "*"+group.Title+"*")
+			}
+			messages = append(messages, groupMessages...)
+		}
+	}
+	return messages
 }
 
 func sortDomains(domains []api.Domain, sortOrder string) {
