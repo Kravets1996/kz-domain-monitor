@@ -1,6 +1,8 @@
 package config
 
 import (
+	"encoding/json"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -13,6 +15,7 @@ type Config struct {
 	PSApiToken     string
 	DomainProvider string
 	DomainList     []string
+	DomainGroups   []DomainGroup
 	DaysToExpire   int64
 	SendSuccess    bool
 	SendOnlyErrors bool
@@ -22,6 +25,69 @@ type Config struct {
 	Slack          SlackConfig
 	Email          EmailConfig
 	Webhook        WebhookConfig
+}
+
+// DomainGroup represents a named group of domains from the JSON config.
+type DomainGroup struct {
+	Title   string
+	Domains []string
+}
+
+// jsonDomainEntry represents either a domain entry or a group in the JSON config.
+type jsonDomainEntry struct {
+	Domain string            `json:"domain"`
+	Title  string            `json:"title"`
+	Items  []jsonDomainEntry `json:"items"`
+}
+
+// loadDomainsFromJSON reads a JSON config file and extracts domain list and group structure.
+func loadDomainsFromJSON(path string) ([]string, []DomainGroup, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, nil, err
+	}
+	var entries []jsonDomainEntry
+	if err := json.Unmarshal(data, &entries); err != nil {
+		return nil, nil, err
+	}
+	return extractDomains(entries), extractGroups(entries), nil
+}
+
+func extractDomains(entries []jsonDomainEntry) []string {
+	var domains []string
+	for _, e := range entries {
+		if e.Domain != "" {
+			domains = append(domains, strings.TrimSpace(e.Domain))
+		}
+		if len(e.Items) > 0 {
+			domains = append(domains, extractDomains(e.Items)...)
+		}
+	}
+	return domains
+}
+
+// extractGroups builds a slice of DomainGroup from top-level JSON entries.
+// Grouped entries (with items) become named groups; top-level domain entries are collected into an unnamed group.
+func extractGroups(entries []jsonDomainEntry) []DomainGroup {
+	var groups []DomainGroup
+	var ungrouped []string
+
+	for _, e := range entries {
+		if len(e.Items) > 0 {
+			domains := extractDomains(e.Items)
+			if len(domains) > 0 {
+				groups = append(groups, DomainGroup{Title: e.Title, Domains: domains})
+			}
+		} else if e.Domain != "" {
+			ungrouped = append(ungrouped, strings.TrimSpace(e.Domain))
+		}
+	}
+
+	if len(ungrouped) > 0 {
+		groups = append(groups, DomainGroup{Title: "", Domains: ungrouped})
+	}
+
+	return groups
 }
 
 type TelegramConfig struct {
@@ -50,6 +116,27 @@ type WebhookConfig struct {
 	URL     string
 }
 
+func loadDomainConfig() ([]string, []DomainGroup) {
+	jsonFile := os.Getenv(`DOMAIN_CONFIG_FILE`)
+	envList := os.Getenv(`DOMAIN_LIST`)
+
+	if jsonFile != "" {
+		if envList != "" {
+			log.Println("WARNING: Both DOMAIN_CONFIG_FILE and DOMAIN_LIST are set. DOMAIN_CONFIG_FILE takes priority.")
+		}
+		domains, groups, err := loadDomainsFromJSON(jsonFile)
+		if err != nil {
+			panic("Failed to load DOMAIN_CONFIG_FILE: " + err.Error())
+		}
+		return domains, groups
+	}
+
+	if envList == "" {
+		panic("Environment variable DOMAIN_LIST is not set")
+	}
+	return strings.Split(envList, ","), nil
+}
+
 func Init() {
 	daysToExpireInt, _ := strconv.ParseInt(getEnv(`DAYS_TO_EXPIRE`, "5"), 10, 64)
 	requestDelayInt, _ := strconv.ParseInt(getEnv(`REQUEST_DELAY`, "3"), 10, 64)
@@ -62,10 +149,13 @@ func Init() {
 		psApiToken = os.Getenv(`PS_GRAPHQL_TOKEN`)
 	}
 
+	domainList, domainGroups := loadDomainConfig()
+
 	Configuration = Config{
 		PSApiToken:     psApiToken,
 		DomainProvider: domainProvider,
-		DomainList:     strings.Split(getEnvStrict(`DOMAIN_LIST`), ","),
+		DomainList:     domainList,
+		DomainGroups:   domainGroups,
 		DaysToExpire:   daysToExpireInt,
 		SendSuccess:    getEnv(`SEND_ON_SUCCESS`, "true") == "true",
 		SendOnlyErrors: getEnv(`SEND_ONLY_ERRORS`, "false") == "true",

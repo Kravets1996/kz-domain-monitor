@@ -14,7 +14,7 @@ func SendNotification(results []string, hasError bool) {
 		return
 	}
 
-	message := "До истечения домена осталось: \n"
+	message := "До истечения домена осталось: \n\n"
 
 	message = message + strings.Join(results, "\n")
 

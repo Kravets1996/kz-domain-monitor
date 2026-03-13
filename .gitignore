@@ -1,6 +1,7 @@
 /.env
 /vendor
 /error.log
+/domains.json
 
 # binary
 /kz-domain-monitor
