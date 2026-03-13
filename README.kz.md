@@ -9,8 +9,8 @@
 - Windows/Linux/Docker/Kubernetes қолдайды
 - Go тілінде жазылған
 
-[ps.kz](https://ps.kz/) API негізінде жасалған.
-Жұмыс істеу үшін жеке кабинетте тіркелу және токен алу қажет (тегін).
+Әдепкі бойынша жалпыға қол жетімді RDAP-сервисті [rdap.nic.kz](https://rdap.nic.kz) пайдаланады — тіркелу және токен қажет емес.
+Балама драйвер ретінде [ps.kz](https://ps.kz/) API да қолдауланады.
 
 ![ps.png](.github/ps.png)
 
@@ -19,7 +19,7 @@
 
 ## Жылдам бастау (Docker)
 ```shell
-docker run --rm -e DOMAIN_LIST=example.kz -e PS_GRAPHQL_TOKEN='****' kravets1996/kz-domain-monitor
+docker run --rm -e DOMAIN_LIST=example.kz kravets1996/kz-domain-monitor
 ```
 
 ## Демо
@@ -67,12 +67,18 @@ go build -o kz-domain-monitor
 
 .env файлын (немесе Kubernetes-те орнатқанда ConfigMap) өңдеп, міндетті айнымалылардың мәндерін орнатыңыз.
 
+### Драйверді (деректер провайдерін) таңдау
+Драйвер `DOMAIN_PROVIDER` айнымалысымен таңдалады:
+- `rdap` — әдепкі, жалпыға қол жетімді RDAP-сервисі rdap.nic.kz, тіркелу және токен қажет емес.
+- `pskz` — ps.kz API, кіру токені қажет.
+
 ### ps.kz API-на қол жеткізуді алу және баптау
 1. ps.kz кабинетінде токен жасаңыз. https://console.ps.kz/account/iam/tokens?tab=my
 2. "Тек оқу" рөлін көрсетіңіз.
 3. Жасалған токенді `PS_GRAPHQL_TOKEN` айнымалысына көшіріңіз
 
-### Telegram хабарландыруларын баптау
+### Хабарландыруларды баптау
+#### Telegram
 1. [BotFather](https://telegram.me/BotFather) арқылы Telegram-бот жасаңыз.
 2. Жаңа боттың токенін жасап, көшіріңіз.
 3. Токенді `TELEGRAM_BOT_TOKEN` айнымалысына орнатыңыз.
@@ -80,6 +86,20 @@ go build -o kz-domain-monitor
 5. Мына сілтемеге өтіңіз (<BOT_TOKEN> орнына 2-қадамда алған бот токенін қойыңыз): `https://api.telegram.org/bot<BOT_TOKEN>/getUpdates`
 6. Алынған JSON-нан чат ID-ін табыңыз: `"chat":{"id":123456789}`
 7. Алынған ID-ді `TELEGRAM_CHAT_ID` айнымалысына орнатыңыз
+8. `TELEGRAM_ENABLED` айнымалысы арқылы хабарландыруларды қосыңыз
+
+#### Slack
+1. Кіріс webhook жасаңыз.
+2. URL-ді `SLACK_WEBHOOK_URL` айнымалысына көшіріңіз
+3. `SLACK_ENABLED` айнымалысы арқылы хабарландыруларды қосыңыз
+
+#### Email
+1. .env.example-да көрсетілген қажетті айнымалыларды толтырыңыз
+2. `EMAIL_ENABLED` айнымалысы арқылы хабарландыруларды қосыңыз
+
+#### Webhook
+1. `WEBHOOK_URL` айнымалысына Webhook URL-ін көрсетіңіз
+2. `WEBHOOK_ENABLED` айнымалысы арқылы хабарландыруларды қосыңыз
 
 ### Домендік атаулар
 Бақылағыңыз келетін домендік атауларды `DOMAIN_LIST` айнымалысында тізіңіз.
@@ -101,7 +121,7 @@ docker run --rm -v $(pwd)/.env:/app/.env kravets1996/kz-domain-monitor
 ### Жоспарлаушы
 Домендерді мерзімді тексеру үшін командар жұмысын жүйе жоспарлаушысына қосу қажет.
 
-ps.kz Rate Limit-ке тап болмау үшін тексеруді күніне 1 реттен жиі орнатпау ұсынылады.
+rdap.nic.kz немесе ps.kz Rate Limit-ке тап болмау үшін тексеруді күніне 1 реттен жиі орнатпау ұсынылады.
 
 #### Linux
 /etc/crontab файлына жаңа жол қосыңыз
@@ -141,6 +161,7 @@ docker run --rm -v $(pwd)/.env:/app/.env kz-domain-monitor
 ```
 
 Пайдалы сілтемелер:
+- [RDAP KazNIC](https://nic.kz/docs/announc_20_01_2026.jsp)
 - [GraphQL API нұсқаулығы](https://console.ps.kz/docs/faq/pscloud-api/ps-cloud-api/instrukciya-po-api-graphql)
 - [GraphQL Playground](https://console.ps.kz/domains/graphql)
 
