@@ -93,6 +93,14 @@ go build -o kz-domain-monitor
 2. Скопируйте URL в переменную `SLACK_WEBHOOK_URL`
 3. Включите уведомления с помощью переменной `SLACK_ENABLED`
 
+#### Email
+1. Заполните необходимые переменные, указанные в .env.example
+2. Включите уведомления с помощью переменной `EMAIL_ENABLED`
+
+#### Webhook
+1. Укажите URL Webhook в переменной `WEBHOOK_URL`
+2. Включите уведомления с помощью переменной `WEBHOOK_ENABLED`
+
 ### Доменные имена
 Перечислите доменные имена, которые вы хотите отслеживать в переменной `DOMAIN_LIST`.
 Формат: `example.kz,example2.kz,example3.kz`

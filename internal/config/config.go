@@ -20,6 +20,8 @@ type Config struct {
 	SortOrder      string
 	Telegram       TelegramConfig
 	Slack          SlackConfig
+	Email          EmailConfig
+	Webhook        WebhookConfig
 }
 
 type TelegramConfig struct {
@@ -31,6 +33,21 @@ type TelegramConfig struct {
 type SlackConfig struct {
 	Enabled    bool
 	WebhookURL string
+}
+
+type EmailConfig struct {
+	Enabled  bool
+	Host     string
+	Port     string
+	Username string
+	Password string
+	From     string
+	To       []string
+}
+
+type WebhookConfig struct {
+	Enabled bool
+	URL     string
 }
 
 func Init() {
@@ -63,6 +80,19 @@ func Init() {
 			Enabled:    getEnv(`SLACK_ENABLED`, "false") == "true",
 			WebhookURL: os.Getenv(`SLACK_WEBHOOK_URL`),
 		},
+		Email: EmailConfig{
+			Enabled:  getEnv(`EMAIL_ENABLED`, "false") == "true",
+			Host:     os.Getenv(`EMAIL_HOST`),
+			Port:     getEnv(`EMAIL_PORT`, "465"),
+			Username: os.Getenv(`EMAIL_USERNAME`),
+			Password: os.Getenv(`EMAIL_PASSWORD`),
+			From:     os.Getenv(`EMAIL_FROM`),
+			To:       splitAndTrim(os.Getenv(`EMAIL_TO`)),
+		},
+		Webhook: WebhookConfig{
+			Enabled: getEnv(`WEBHOOK_ENABLED`, "false") == "true",
+			URL:     os.Getenv(`WEBHOOK_URL`),
+		},
 	}
 
 	if Configuration.Telegram.Enabled {
@@ -74,6 +104,18 @@ func Init() {
 	if Configuration.Slack.Enabled {
 		if Configuration.Slack.WebhookURL == "" {
 			panic("Slack webhook URL is not set")
+		}
+	}
+
+	if Configuration.Email.Enabled {
+		if Configuration.Email.Host == "" || Configuration.Email.Username == "" || Configuration.Email.From == "" || len(Configuration.Email.To) == 0 {
+			panic("Email config is not set")
+		}
+	}
+
+	if Configuration.Webhook.Enabled {
+		if Configuration.Webhook.URL == "" {
+			panic("Webhook URL is not set")
 		}
 	}
 }
@@ -94,4 +136,19 @@ func getEnvStrict(key string) string {
 		return value
 	}
 	panic("Environment variable " + key + " is not set")
+}
+
+func splitAndTrim(s string) []string {
+	if s == "" {
+		return nil
+	}
+	parts := strings.Split(s, ",")
+	result := make([]string, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			result = append(result, p)
+		}
+	}
+	return result
 }
