@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strings"
 	"time"
 )
 
@@ -32,19 +31,9 @@ func (r RDAPResponse) GetExpirationDate() string {
 	return ""
 }
 
-const rdapDateLayout = "2006-01-02 15:04:05 -07:00"
-
-// parseRDAPDate parses dates in the format "2031-07-14 06:47:20 (GMT+0:00)".
+// parseRDAPDate parses dates in RFC3339 format (e.g. "2025-05-08T21:59:03Z").
 func parseRDAPDate(s string) (time.Time, error) {
-	if idx := strings.Index(s, " (GMT"); idx != -1 {
-		tz := s[idx+5 : len(s)-1] // e.g. "+0:00"
-		// Normalize single-digit hour offset: "+0:00" -> "+00:00"
-		if len(tz) > 2 && tz[2] == ':' {
-			tz = tz[:1] + "0" + tz[1:]
-		}
-		return time.Parse(rdapDateLayout, s[:idx]+" "+tz)
-	}
-	return time.Parse(rdapDateLayout, s)
+	return time.Parse(time.RFC3339, s)
 }
 
 // RDAPProvider fetches domain info from the nic.kz RDAP endpoint.
