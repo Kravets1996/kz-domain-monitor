@@ -10,7 +10,6 @@ import (
 	"os"
 	"runtime"
 	"sort"
-	"time"
 
 	"github.com/fynelabs/selfupdate"
 	"github.com/joho/godotenv"
@@ -42,22 +41,22 @@ func main() {
 	config.Init()
 	cfg := config.GetConfig()
 
+	checker := api.NewChecker(cfg.RequestDelay)
+
 	var domains []api.Domain
 	hasError := false
 
-	for i, domainName := range cfg.DomainList {
-		domain := api.GetDomainInfo(domainName)
+	for _, domainName := range cfg.DomainList {
+		domain := checker.Check(domainName)
 
-		log.Println(domain.GetMessage())
+		for _, message := range domain.GetMessages() {
+			log.Println(message)
+		}
 
-		hasError = hasError || !domain.IsOk()
+		hasError = hasError || !domain.IsHealthy()
 
 		if domain.ShouldSend() {
 			domains = append(domains, domain)
-		}
-
-		if i < len(cfg.DomainList)-1 {
-			time.Sleep(cfg.RequestDelay)
 		}
 	}
 
@@ -68,7 +67,7 @@ func main() {
 		messages = buildGroupedMessages(domains, cfg.DomainGroups)
 	} else {
 		for _, domain := range domains {
-			messages = append(messages, domain.GetMessage())
+			messages = append(messages, domain.GetMessages()...)
 		}
 	}
 
@@ -96,7 +95,7 @@ func buildGroupedMessages(domains []api.Domain, groups []config.DomainGroup) []s
 		var groupMessages []string
 		for _, name := range group.Domains {
 			if d, ok := domainMap[name]; ok {
-				groupMessages = append(groupMessages, d.GetMessage())
+				groupMessages = append(groupMessages, d.GetMessages()...)
 			}
 		}
 		if len(groupMessages) > 0 {

@@ -10,15 +10,32 @@ import (
 
 // RDAPResponse represents the RDAP API response from nic.kz.
 type RDAPResponse struct {
-	LdhName string      `json:"ldhName"`
-	Status  []string    `json:"status"`
-	Events  []RDAPEvent `json:"events"`
+	LdhName     string           `json:"ldhName"`
+	Status      []string         `json:"status"`
+	Events      []RDAPEvent      `json:"events"`
+	Nameservers []RDAPNameserver `json:"nameservers"`
 }
 
 // RDAPEvent represents a single event in the RDAP response.
 type RDAPEvent struct {
 	Action string `json:"eventAction"`
 	Date   string `json:"eventDate"`
+}
+
+// RDAPNameserver represents a nameserver entry in the RDAP response.
+type RDAPNameserver struct {
+	LdhName string `json:"ldhName"`
+}
+
+// GetNameservers returns the nameserver host names from the RDAP response.
+func (r RDAPResponse) GetNameservers() []string {
+	var nameservers []string
+	for _, ns := range r.Nameservers {
+		if ns.LdhName != "" {
+			nameservers = append(nameservers, ns.LdhName)
+		}
+	}
+	return nameservers
 }
 
 // GetExpirationDate returns the expiration date string from RDAP events.
@@ -98,5 +115,6 @@ func rdapGetDomainInfoFromURL(url, domainName string) Domain {
 		Name:           domainName,
 		IsAvailable:    false,
 		ExpirationDate: datePointer,
+		Nameservers:    rdapResp.GetNameservers(),
 	}
 }
