@@ -13,7 +13,11 @@ type GraphQLResponse struct {
 					Available bool `json:"available"`
 					Info      struct {
 						Domain struct {
-							ExDate string `json:"exDate"`
+							ExDate      string `json:"exDate"`
+							Nameservers []struct {
+								Name string   `json:"name"`
+								IP   []string `json:"ip"`
+							}
 						} `json:"domain"`
 					} `json:"info"`
 				} `json:"whois"`
@@ -28,4 +32,14 @@ func (r GraphQLResponse) IsAvailable() bool {
 
 func (r GraphQLResponse) GetExpirationDate() string {
 	return r.Data.Domains.Whois.Whois.Info.Domain.ExDate
+}
+
+func (r GraphQLResponse) GetNameservers() []string {
+	var nameservers []string
+
+	for _, ns := range r.Data.Domains.Whois.Whois.Info.Domain.Nameservers {
+		nameservers = append(nameservers, ns.Name)
+	}
+
+	return nameservers
 }

@@ -5,12 +5,12 @@ import (
 	"kz-domain-monitor/internal/api"
 	"kz-domain-monitor/internal/config"
 	"kz-domain-monitor/internal/notification"
+	"kz-domain-monitor/internal/storage"
 	"log"
 	"net/http"
 	"os"
 	"runtime"
 	"sort"
-	"time"
 
 	"github.com/fynelabs/selfupdate"
 	"github.com/joho/godotenv"
@@ -42,22 +42,29 @@ func main() {
 	config.Init()
 	cfg := config.GetConfig()
 
+	checker := api.NewChecker(cfg.RequestDelay)
+
+	store := openHistoryStore(cfg.HistoryDBPath)
+	if store != nil {
+		defer store.Close()
+	}
+
 	var domains []api.Domain
 	hasError := false
 
-	for i, domainName := range cfg.DomainList {
-		domain := api.GetDomainInfo(domainName)
+	for _, domainName := range cfg.DomainList {
+		domain := checker.Check(domainName)
 
-		log.Println(domain.GetMessage())
+		enrichWithHistory(store, &domain)
 
-		hasError = hasError || !domain.IsOk()
+		for _, message := range domain.GetMessages() {
+			log.Println(message)
+		}
+
+		hasError = hasError || !domain.IsHealthy()
 
 		if domain.ShouldSend() {
 			domains = append(domains, domain)
-		}
-
-		if i < len(cfg.DomainList)-1 {
-			time.Sleep(cfg.RequestDelay)
 		}
 	}
 
@@ -68,7 +75,7 @@ func main() {
 		messages = buildGroupedMessages(domains, cfg.DomainGroups)
 	} else {
 		for _, domain := range domains {
-			messages = append(messages, domain.GetMessage())
+			messages = append(messages, domain.GetMessages()...)
 		}
 	}
 
@@ -85,6 +92,52 @@ func main() {
 	os.Exit(0)
 }
 
+// openHistoryStore открывает базу данных истории сроков истечения рядом с бинарником.
+// История - вспомогательная функция, поэтому при ошибке открытия мониторинг
+// продолжает работать без отметок о продлении.
+func openHistoryStore(path string) *storage.Store {
+	if path == "" {
+		path = storage.DefaultPath()
+	}
+
+	store, err := storage.Open(path)
+	if err != nil {
+		log.Printf("История: не удалось открыть базу данных: %v", err)
+		return nil
+	}
+	return store
+}
+
+// enrichWithHistory подставляет домену (и его NS-доменам) срок истечения из прошлой
+// проверки, после чего сохраняет текущий срок в историю.
+func enrichWithHistory(store *storage.Store, domain *api.Domain) {
+	if store == nil {
+		return
+	}
+
+	applyHistory(store, domain)
+	for i := range domain.NSDomains {
+		applyHistory(store, &domain.NSDomains[i])
+	}
+}
+
+func applyHistory(store *storage.Store, domain *api.Domain) {
+	if domain.ExpirationDate == nil {
+		return
+	}
+
+	prev, err := store.GetExpiration(domain.Name)
+	if err != nil {
+		log.Printf("История: не удалось прочитать %s: %v", domain.Name, err)
+		return
+	}
+	domain.PreviousExpirationDate = prev
+
+	if err := store.SetExpiration(domain.Name, *domain.ExpirationDate); err != nil {
+		log.Printf("История: не удалось сохранить %s: %v", domain.Name, err)
+	}
+}
+
 func buildGroupedMessages(domains []api.Domain, groups []config.DomainGroup) []string {
 	domainMap := make(map[string]api.Domain, len(domains))
 	for _, d := range domains {
@@ -96,7 +149,7 @@ func buildGroupedMessages(domains []api.Domain, groups []config.DomainGroup) []s
 		var groupMessages []string
 		for _, name := range group.Domains {
 			if d, ok := domainMap[name]; ok {
-				groupMessages = append(groupMessages, d.GetMessage())
+				groupMessages = append(groupMessages, d.GetMessages()...)
 			}
 		}
 		if len(groupMessages) > 0 {

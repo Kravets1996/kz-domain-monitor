@@ -13,7 +13,7 @@ import (
 )
 
 var client = http.Client{
-	Timeout: time.Second * 10,
+	Timeout: config.GetConfig().RequestDelay,
 }
 
 // PsKzProvider fetches domain info from the ps.kz GraphQL API.
@@ -29,6 +29,10 @@ func (p *PsKzProvider) GetDomainInfo(domainName string) Domain {
 					available
 					info {
 						domain {
+							nameservers {
+								name
+								ip
+							}
 							exDate
 						}
 					}
@@ -56,6 +60,7 @@ func (p *PsKzProvider) GetDomainInfo(domainName string) Domain {
 		Name:           domainName,
 		IsAvailable:    response.IsAvailable(),
 		ExpirationDate: datePointer,
+		Nameservers:    response.GetNameservers(),
 	}
 }
 

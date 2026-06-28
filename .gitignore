@@ -3,6 +3,9 @@
 /error.log
 /domains.json
 
+# история сроков истечения доменов
+/kz-domain-monitor.db
+
 # binary
 /kz-domain-monitor
 /kz-domain-monitor.exe

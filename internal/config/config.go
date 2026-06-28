@@ -21,10 +21,13 @@ type Config struct {
 	SendOnlyErrors bool
 	RequestDelay   time.Duration
 	SortOrder      string
-	Telegram       TelegramConfig
-	Slack          SlackConfig
-	Email          EmailConfig
-	Webhook        WebhookConfig
+	// HistoryDBPath - путь к SQLite-базе с историей сроков истечения.
+	// Пусто - база создаётся рядом с бинарником (значение по умолчанию).
+	HistoryDBPath string
+	Telegram      TelegramConfig
+	Slack         SlackConfig
+	Email         EmailConfig
+	Webhook       WebhookConfig
 }
 
 // DomainGroup represents a named group of domains from the JSON config.
@@ -160,6 +163,7 @@ func Init() {
 		SendSuccess:    getEnv(`SEND_ON_SUCCESS`, "true") == "true",
 		SendOnlyErrors: getEnv(`SEND_ONLY_ERRORS`, "false") == "true",
 		SortOrder:      getEnv(`SORT_ORDER`, "default"),
+		HistoryDBPath:  os.Getenv(`HISTORY_DB_PATH`),
 		RequestDelay:   time.Second * time.Duration(requestDelayInt),
 		Telegram: TelegramConfig{
 			Enabled:  getEnv(`TELEGRAM_ENABLED`, "true") == "true",

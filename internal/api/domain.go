@@ -6,11 +6,39 @@ import (
 	"time"
 )
 
+// dateLayout - формат отображения даты истечения в сообщениях о продлении.
+const dateLayout = "02.01.2006"
+
 type Domain struct {
 	Name           string
 	IsAvailable    bool
 	ExpirationDate *time.Time
 	Error          error
+	Nameservers    []string
+	// NSDomains - домены, которым принадлежат NS-серверы домена.
+	// Их непродление также ломает работу сайта, поэтому они мониторятся отдельно.
+	NSDomains []Domain
+	// PreviousExpirationDate - срок истечения из прошлой проверки (из истории).
+	// Если он раньше текущего, значит домен был продлён.
+	PreviousExpirationDate *time.Time
+}
+
+func NewDomain(name string, isAvailable bool, expirationDate string, nameservers []string) Domain {
+	var datePointer *time.Time
+	date, err := time.Parse(time.RFC3339, expirationDate)
+
+	if err != nil {
+		datePointer = nil
+	} else {
+		datePointer = &date
+	}
+
+	return Domain{
+		Name:           name,
+		IsAvailable:    isAvailable,
+		ExpirationDate: datePointer,
+		Nameservers:    nameservers,
+	}
 }
 
 func (domain Domain) GetDaysToExpire() int64 {
@@ -54,9 +82,54 @@ func (domain Domain) IsOk() bool {
 	return !domain.IsAvailable && !domain.isCloseToExpire()
 }
 
-func (domain Domain) ShouldSend() bool {
-	// Ошибки отправляются всегда.
+// IsHealthy возвращает true, только если в порядке и сам домен, и все домены его NS-серверов.
+func (domain Domain) IsHealthy() bool {
 	if !domain.IsOk() {
+		return false
+	}
+
+	for _, ns := range domain.NSDomains {
+		if !ns.IsOk() {
+			return false
+		}
+	}
+
+	return true
+}
+
+// IsRenewed возвращает true, если срок истечения домена увеличился по сравнению
+// с предыдущей проверкой, то есть домен был продлён.
+func (domain Domain) IsRenewed() bool {
+	if domain.ExpirationDate == nil || domain.PreviousExpirationDate == nil {
+		return false
+	}
+
+	return domain.ExpirationDate.After(*domain.PreviousExpirationDate)
+}
+
+// hasRenewal возвращает true, если был продлён сам домен или любой из его NS-доменов.
+func (domain Domain) hasRenewal() bool {
+	if domain.IsRenewed() {
+		return true
+	}
+
+	for _, ns := range domain.NSDomains {
+		if ns.IsRenewed() {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (domain Domain) ShouldSend() bool {
+	// Ошибки (в том числе по NS-доменам) отправляются всегда.
+	if !domain.IsHealthy() {
+		return true
+	}
+
+	// Продление - тоже значимое событие, показываем его даже при OnlyErrors.
+	if domain.hasRenewal() {
 		return true
 	}
 
@@ -77,5 +150,29 @@ func (domain Domain) GetMessage() string {
 		return "❌ Домен доступен для регистрации: " + domain.Name
 	}
 
-	return fmt.Sprintf("%s %d дней - %s", domain.getIcon(), domain.GetDaysToExpire(), domain.Name)
+	message := fmt.Sprintf("%s %d дней - %s", domain.getIcon(), domain.GetDaysToExpire(), domain.Name)
+
+	if domain.IsRenewed() {
+		message += fmt.Sprintf(" 🔄 продление (%s → %s)",
+			domain.PreviousExpirationDate.Format(dateLayout),
+			domain.ExpirationDate.Format(dateLayout))
+	}
+
+	return message
+}
+
+// GetMessages возвращает сообщение домена, а следом - сообщения по доменам его NS-серверов
+// с отступом, формируя вложенный вид:
+//
+//	example.kz
+//	  ↳ ns-домен1
+//	  ↳ ns-домен2
+func (domain Domain) GetMessages() []string {
+	messages := []string{domain.GetMessage()}
+
+	for _, ns := range domain.NSDomains {
+		messages = append(messages, "  ↳ "+ns.GetMessage())
+	}
+
+	return messages
 }
