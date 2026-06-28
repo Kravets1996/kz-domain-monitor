@@ -1,5 +1,21 @@
 ### Cronjob отправляет ежедневно только доменные имена с проблемами и раз в неделю - полный список.
 
+# PersistentVolumeClaim для истории сроков истечения доменов.
+# Без него история не переживёт завершение пода, и продления отмечаться не будут.
+# Оба CronJob используют один и тот же том (RWO достаточно: ежедневный и недельный
+# запуски не пересекаются по расписанию, а concurrencyPolicy: Forbid исключает наложение).
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kz-domain-monitor-history
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 64Mi
+
 # Ежедневно - только заканчивающиеся домены
 # SEND_ONLY_ERRORS=true
 ---
@@ -27,9 +43,20 @@ spec:
               env:
                 - name: SEND_ONLY_ERRORS
                   value: "true"
+                # База истории на примонтированном томе, а не рядом с бинарником,
+                # чтобы переживать пересоздание пода.
+                - name: HISTORY_DB_PATH
+                  value: "/data/kz-domain-monitor.db"
               envFrom:
                 - configMapRef:
                     name: kz-domain-monitor
+              volumeMounts:
+                - name: history
+                  mountPath: /data
+          volumes:
+            - name: history
+              persistentVolumeClaim:
+                claimName: kz-domain-monitor-history
 
 # Раз в неделю - полный список доменов
 # SEND_ONLY_ERRORS=false
@@ -58,6 +85,15 @@ spec:
               env:
                 - name: SEND_ONLY_ERRORS
                   value: "false"
+                - name: HISTORY_DB_PATH
+                  value: "/data/kz-domain-monitor.db"
               envFrom:
                 - configMapRef:
                     name: kz-domain-monitor
+              volumeMounts:
+                - name: history
+                  mountPath: /data
+          volumes:
+            - name: history
+              persistentVolumeClaim:
+                claimName: kz-domain-monitor-history

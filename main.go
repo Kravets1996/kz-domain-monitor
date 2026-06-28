@@ -5,6 +5,7 @@ import (
 	"kz-domain-monitor/internal/api"
 	"kz-domain-monitor/internal/config"
 	"kz-domain-monitor/internal/notification"
+	"kz-domain-monitor/internal/storage"
 	"log"
 	"net/http"
 	"os"
@@ -43,11 +44,18 @@ func main() {
 
 	checker := api.NewChecker(cfg.RequestDelay)
 
+	store := openHistoryStore(cfg.HistoryDBPath)
+	if store != nil {
+		defer store.Close()
+	}
+
 	var domains []api.Domain
 	hasError := false
 
 	for _, domainName := range cfg.DomainList {
 		domain := checker.Check(domainName)
+
+		enrichWithHistory(store, &domain)
 
 		for _, message := range domain.GetMessages() {
 			log.Println(message)
@@ -82,6 +90,52 @@ func main() {
 	}
 
 	os.Exit(0)
+}
+
+// openHistoryStore открывает базу данных истории сроков истечения рядом с бинарником.
+// История - вспомогательная функция, поэтому при ошибке открытия мониторинг
+// продолжает работать без отметок о продлении.
+func openHistoryStore(path string) *storage.Store {
+	if path == "" {
+		path = storage.DefaultPath()
+	}
+
+	store, err := storage.Open(path)
+	if err != nil {
+		log.Printf("История: не удалось открыть базу данных: %v", err)
+		return nil
+	}
+	return store
+}
+
+// enrichWithHistory подставляет домену (и его NS-доменам) срок истечения из прошлой
+// проверки, после чего сохраняет текущий срок в историю.
+func enrichWithHistory(store *storage.Store, domain *api.Domain) {
+	if store == nil {
+		return
+	}
+
+	applyHistory(store, domain)
+	for i := range domain.NSDomains {
+		applyHistory(store, &domain.NSDomains[i])
+	}
+}
+
+func applyHistory(store *storage.Store, domain *api.Domain) {
+	if domain.ExpirationDate == nil {
+		return
+	}
+
+	prev, err := store.GetExpiration(domain.Name)
+	if err != nil {
+		log.Printf("История: не удалось прочитать %s: %v", domain.Name, err)
+		return
+	}
+	domain.PreviousExpirationDate = prev
+
+	if err := store.SetExpiration(domain.Name, *domain.ExpirationDate); err != nil {
+		log.Printf("История: не удалось сохранить %s: %v", domain.Name, err)
+	}
 }
 
 func buildGroupedMessages(domains []api.Domain, groups []config.DomainGroup) []string {

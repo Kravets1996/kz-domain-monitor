@@ -3,6 +3,7 @@ package api
 import (
 	"kz-domain-monitor/internal/config"
 	"os"
+	"strings"
 	"testing"
 	"time"
 )
@@ -120,6 +121,56 @@ func TestDomain_GetMessage_NoDate(t *testing.T) {
 
 	if message != exampleMessage {
 		t.Fatal("wrong message", message, exampleMessage)
+	}
+}
+
+func TestDomain_IsRenewed(t *testing.T) {
+	older := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	newer := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	cases := []struct {
+		name string
+		prev *time.Time
+		cur  *time.Time
+		want bool
+	}{
+		{"renewed", &older, &newer, true},
+		{"unchanged", &older, &older, false},
+		{"no previous", nil, &newer, false},
+		{"no current", &older, nil, false},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			domain := Domain{ExpirationDate: c.cur, PreviousExpirationDate: c.prev}
+			if got := domain.IsRenewed(); got != c.want {
+				t.Fatalf("IsRenewed() = %v, want %v", got, c.want)
+			}
+		})
+	}
+}
+
+func TestDomain_GetMessage_Renewed(t *testing.T) {
+	prev := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	domain := getBasicDomain()
+	domain.PreviousExpirationDate = &prev
+
+	message := domain.GetMessage()
+
+	if !strings.Contains(message, "🔄 продление") {
+		t.Fatalf("expected renewal marker in message, got %q", message)
+	}
+	expected := "01.01.2025 → " + domain.ExpirationDate.Format(dateLayout)
+	if !strings.Contains(message, expected) {
+		t.Fatalf("expected %q in message, got %q", expected, message)
+	}
+}
+
+func TestDomain_GetMessage_NotRenewed_NoMarker(t *testing.T) {
+	domain := getBasicDomain()
+
+	if strings.Contains(domain.GetMessage(), "продление") {
+		t.Fatalf("did not expect renewal marker, got %q", domain.GetMessage())
 	}
 }
 
