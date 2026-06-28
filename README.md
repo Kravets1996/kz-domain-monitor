@@ -7,8 +7,8 @@
 - Поддерживает Windows/Linux/Docker/Kubernetes
 - Написана на Go
 
-Основана на API [ps.kz](https://ps.kz/). 
-Для работы необходима регистрация и получение токена в личном кабинете (бесплатно).
+По умолчанию использует публичный RDAP-сервис [rdap.nic.kz](https://rdap.nic.kz) — регистрация и токены не нужны.
+Также поддерживается API [ps.kz](https://ps.kz/) как альтернативный драйвер.
 
 ![ps.png](.github/ps.png)
 
@@ -18,7 +18,7 @@
 
 ## Быстрый старт (Docker)
 ```shell
-docker run --rm -e DOMAIN_LIST=example.kz -e PS_GRAPHQL_TOKEN='****' kravets1996/kz-domain-monitor
+docker run --rm -e DOMAIN_LIST=example.kz kravets1996/kz-domain-monitor
 ```
 
 ## Демо
@@ -67,12 +67,18 @@ go build -o kz-domain-monitor
 Отредактируйте файл .env (или ConfigMap при установке в Kubernetes) 
 и установите значения для обязательных переменных.
 
+### Выбор драйвера (провайдера данных)
+Драйвер выбирается переменной `DOMAIN_PROVIDER`:
+- `rdap` — по умолчанию, публичный RDAP-сервис rdap.nic.kz, регистрация и токены не нужны.
+- `pskz` — API ps.kz, требует токен доступа.
+
 ### Получение и настройка доступа к API ps.kz
 1. Создайте токен в кабинете ps.kz. https://console.ps.kz/account/iam/tokens?tab=my
 2. Укажите роль "Только чтение".
 3. Скопируйте сгенерированный токен в переменную `PS_GRAPHQL_TOKEN`
 
-### Настройка уведомлений в Telegram
+### Настройка уведомлений
+#### Telegram
 1. Создайте Telegram-бота с помощью [BotFather](https://telegram.me/BotFather).
 2. Создайте и скопируйте токен нового бота.
 3. Установите токен в переменную `TELEGRAM_BOT_TOKEN`.
@@ -80,6 +86,20 @@ go build -o kz-domain-monitor
 5. Перейдите по ссылке (замените <BOT_TOKEN> на токен бота, полученный на шаге 2) `https://api.telegram.org/bot<BOT_TOKEN>/getUpdates`
 6. Найдите ID чата в полученном JSON `"chat":{"id":123456789}`
 7. Установите полученный ID в переменную `TELEGRAM_CHAT_ID`
+8. Включите уведомления с помощью переменной `TELEGRAM_ENABLED`
+
+#### Slack
+1. Создайте входящий webhook.
+2. Скопируйте URL в переменную `SLACK_WEBHOOK_URL`
+3. Включите уведомления с помощью переменной `SLACK_ENABLED`
+
+#### Email
+1. Заполните необходимые переменные, указанные в .env.example
+2. Включите уведомления с помощью переменной `EMAIL_ENABLED`
+
+#### Webhook
+1. Укажите URL Webhook в переменной `WEBHOOK_URL`
+2. Включите уведомления с помощью переменной `WEBHOOK_ENABLED`
 
 ### Доменные имена
 Перечислите доменные имена, которые вы хотите отслеживать в переменной `DOMAIN_LIST`.
@@ -101,7 +121,7 @@ docker run --rm -v $(pwd)/.env:/app/.env kravets1996/kz-domain-monitor
 ### Планировщик
 Для периодической проверки доменов необходимо добавить запуск команды в планировщик системы.
 
-Рекомендуется устанавливать проверку не чаще 1 раза в сутки, чтобы не столкнуться с Rate Limit ps.kz.
+Рекомендуется устанавливать проверку не чаще 1 раза в сутки, чтобы не столкнуться с Rate Limit rdap.nic.kz или ps.kz.
 
 #### Linux
 Добавьте новую строку в файл /etc/crontab
@@ -141,6 +161,7 @@ docker run --rm -v $(pwd)/.env:/app/.env kz-domain-monitor
 ```
 
 Полезные ссылки:
+- [RDAP KazNIC](https://nic.kz/docs/announc_20_01_2026.jsp)
 - [Инструкция по API GraphQL](https://console.ps.kz/docs/faq/pscloud-api/ps-cloud-api/instrukciya-po-api-graphql)
 - [GraphQL Playground](https://console.ps.kz/domains/graphql)
 

@@ -2,6 +2,7 @@ package api
 
 import (
 	"kz-domain-monitor/internal/config"
+	"os"
 	"testing"
 	"time"
 )
@@ -10,6 +11,7 @@ func TestMain(m *testing.M) {
 	config.Configuration = config.Config{
 		DaysToExpire: 15,
 	}
+	os.Exit(m.Run())
 }
 
 func TestDomain_IsOk_OK(t *testing.T) {
@@ -75,7 +77,7 @@ func TestDomain_GetMessage_Available(t *testing.T) {
 	domain.IsAvailable = true
 
 	message := domain.GetMessage()
-	exampleMessage := "❗️ Домен доступен для регистрации: example.kz"
+	exampleMessage := "❌ Домен доступен для регистрации: example.kz"
 
 	if message != exampleMessage {
 		t.Fatal("wrong message", message, exampleMessage)
@@ -129,9 +131,11 @@ func getBasicDomain() Domain {
 	}
 }
 
-func days(days time.Duration) *time.Time {
-	now := time.Now()
-	now = now.Add(time.Hour * 24 * days)
-
-	return &now
+func days(n time.Duration) *time.Time {
+	offset := time.Hour * 12
+	if n < 0 {
+		offset = -offset
+	}
+	t := time.Now().Add(time.Hour*24*n + offset)
+	return &t
 }

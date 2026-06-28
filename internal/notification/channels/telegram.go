@@ -2,6 +2,7 @@ package channels
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -39,7 +40,12 @@ func (t TelegramChannel) Send(message string, silent bool) (err error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("telegram api error: %s", resp.Status)
+		body, err := io.ReadAll(resp.Body)
+
+		if err != nil {
+			return fmt.Errorf("telegram api error: %s (failed to read response body: %w)", resp.Status, err)
+		}
+		return fmt.Errorf("telegram api error: %s, body: %s", resp.Status, string(body))
 	}
 
 	return nil

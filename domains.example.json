@@ -1,0 +1,19 @@
+[
+    {
+        "title": "Личные домены",
+        "items": [
+            {
+                "domain": "example.kz",
+                "title": "Мой сайт"
+            },
+            {
+                "domain": "mysite.kz",
+                "title": "Другой сайт"
+            }
+        ]
+    },
+    {
+        "domain": "egov.kz",
+        "title": "Отдельный домен"
+    }
+]
