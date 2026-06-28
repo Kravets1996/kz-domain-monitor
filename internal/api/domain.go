@@ -12,6 +12,9 @@ type Domain struct {
 	ExpirationDate *time.Time
 	Error          error
 	Nameservers    []string
+	// NSDomains - домены, которым принадлежат NS-серверы домена.
+	// Их непродление также ломает работу сайта, поэтому они мониторятся отдельно.
+	NSDomains []Domain
 }
 
 func NewDomain(name string, isAvailable bool, expirationDate string, nameservers []string) Domain {
@@ -73,9 +76,24 @@ func (domain Domain) IsOk() bool {
 	return !domain.IsAvailable && !domain.isCloseToExpire()
 }
 
-func (domain Domain) ShouldSend() bool {
-	// Ошибки отправляются всегда.
+// IsHealthy возвращает true, только если в порядке и сам домен, и все домены его NS-серверов.
+func (domain Domain) IsHealthy() bool {
 	if !domain.IsOk() {
+		return false
+	}
+
+	for _, ns := range domain.NSDomains {
+		if !ns.IsOk() {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (domain Domain) ShouldSend() bool {
+	// Ошибки (в том числе по NS-доменам) отправляются всегда.
+	if !domain.IsHealthy() {
 		return true
 	}
 
@@ -97,4 +115,20 @@ func (domain Domain) GetMessage() string {
 	}
 
 	return fmt.Sprintf("%s %d дней - %s", domain.getIcon(), domain.GetDaysToExpire(), domain.Name)
+}
+
+// GetMessages возвращает сообщение домена, а следом - сообщения по доменам его NS-серверов
+// с отступом, формируя вложенный вид:
+//
+//	example.kz
+//	  ↳ ns-домен1
+//	  ↳ ns-домен2
+func (domain Domain) GetMessages() []string {
+	messages := []string{domain.GetMessage()}
+
+	for _, ns := range domain.NSDomains {
+		messages = append(messages, "  ↳ "+ns.GetMessage())
+	}
+
+	return messages
 }
