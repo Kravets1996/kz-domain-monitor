@@ -1,0 +1,8 @@
+version: "2"
+
+linters:
+  exclusions:
+    # Восстанавливает поведение golangci-lint v1 по умолчанию: не ругаться на
+    # непроверенные ошибки у привычных вызовов (.Close, Fprint и т.п.).
+    presets:
+      - std-error-handling
